@@ -1,0 +1,34 @@
+
+%include
+{
+}
+
+
+%class_name { ulang_parser }
+%token_prefix { TOKEN_ }
+%token_type { type }
+
+
+
+
+binary_expr { type }
+[
+    binary_expr(a) BOR(op) binary_expr(b) .     { return new ( 2 ) ST_Node( op, { a, b } ); }
+    binary_expr(a) BAND(op) binary_expr(b) .    {}
+    binary_expr(a) OR(op) binary_expr(b) .      {}
+    binary_expr(a) AND(op) binary_expr(b) .     {}
+    binary_expr(a) XOR(op) binary_expr(b) .     {}
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
