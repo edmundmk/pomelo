@@ -9,3 +9,13 @@
 #include "syntax.h"
 
 
+syntax::syntax( source_ptr source )
+    :   source( source )
+{
+}
+
+syntax::~syntax()
+{
+}
+
+

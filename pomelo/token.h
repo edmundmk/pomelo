@@ -14,60 +14,51 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "diagnostics.h"
+#include <unordered_map>
+#include "errors.h"
 
 
-class token;
-class token_source;
+struct token;
+class source;
 template <> struct std::hash< token >;
 
-typedef std::shared_ptr< token_source > token_source_ptr;
+typedef std::shared_ptr< source > source_ptr;
 
 
-class token
+struct token
 {
-public:
+    srcloc sloc;
+    size_t text;
+    size_t hash;
 
-    token();
-    ~token();
-    
-    explicit operator bool () const             { return _text != 0; }
-    bool operator == ( const token& t ) const   { return _text == t._text; }
-    bool operator != ( const token& t ) const   { return _text == t._text; }
-    
-
-private:
-
-    friend struct std::hash< token >;
-
-    srcloc _sloc;
-    size_t _text;
-    size_t _hash;
-
+    explicit operator bool () const             { return text != 0; }
+    bool operator == ( const token& t ) const   { return text == t.text; }
+    bool operator != ( const token& t ) const   { return text == t.text; }
 };
 
 
 template <> struct std::hash< token >
 {
-    size_t operator () ( const token& t ) const { return t._hash; }
+    size_t operator () ( const token& t ) const { return t.hash; }
 };
 
 
-class token_source
+class source
 {
 public:
     
-    explicit token_source( std::string_view path );
-    ~token_source();
+    explicit source( std::string_view path );
+    source();
     
     token new_token( srcloc sloc, std::string_view text );
-    std::string_view text( const token& token ) const;
+    const char* text( const token& token ) const;
     
 
 private:
 
     std::string _path;
     std::vector< char > _text;
+    std::unordered_map< std::string_view, size_t > _lookup;
 
 };
 

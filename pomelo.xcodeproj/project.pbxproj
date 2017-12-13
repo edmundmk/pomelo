@@ -11,7 +11,7 @@
 		DB6564EA1FDF26E000F6AAF8 /* syntax.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564E81FDF26E000F6AAF8 /* syntax.cpp */; };
 		DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EB1FDF28A000F6AAF8 /* token.cpp */; };
 		DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EF1FDF310E00F6AAF8 /* parser.cpp */; };
-		DB6564F71FDF3E9D00F6AAF8 /* diagnostics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564F51FDF3E9D00F6AAF8 /* diagnostics.cpp */; };
+		DB6564F71FDF3E9D00F6AAF8 /* errors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,8 +36,8 @@
 		DB6564EC1FDF28A000F6AAF8 /* token.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = token.h; sourceTree = "<group>"; };
 		DB6564EF1FDF310E00F6AAF8 /* parser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = parser.cpp; sourceTree = "<group>"; };
 		DB6564F01FDF310E00F6AAF8 /* parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = parser.h; sourceTree = "<group>"; };
-		DB6564F51FDF3E9D00F6AAF8 /* diagnostics.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = diagnostics.cpp; sourceTree = "<group>"; };
-		DB6564F61FDF3E9D00F6AAF8 /* diagnostics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = diagnostics.h; sourceTree = "<group>"; };
+		DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = errors.cpp; sourceTree = "<group>"; };
+		DB6564F61FDF3E9D00F6AAF8 /* errors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = errors.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,8 +71,8 @@
 		DB3070D81FDCA6A000AACBDC /* pomelo */ = {
 			isa = PBXGroup;
 			children = (
-				DB6564F51FDF3E9D00F6AAF8 /* diagnostics.cpp */,
-				DB6564F61FDF3E9D00F6AAF8 /* diagnostics.h */,
+				DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */,
+				DB6564F61FDF3E9D00F6AAF8 /* errors.h */,
 				DB3070D91FDCA6A000AACBDC /* main.cpp */,
 				DB6564EF1FDF310E00F6AAF8 /* parser.cpp */,
 				DB6564F01FDF310E00F6AAF8 /* parser.h */,
@@ -145,7 +145,7 @@
 				DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */,
 				DB6564EA1FDF26E000F6AAF8 /* syntax.cpp in Sources */,
 				DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */,
-				DB6564F71FDF3E9D00F6AAF8 /* diagnostics.cpp in Sources */,
+				DB6564F71FDF3E9D00F6AAF8 /* errors.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

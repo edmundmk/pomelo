@@ -45,12 +45,14 @@ struct directive
 
 struct syntax
 {
-    token_source_ptr token_source;
+    explicit syntax( source_ptr source );
+    ~syntax();
+
+    source_ptr source;
+    directive include;
     directive class_name;
     directive token_prefix;
     directive token_type;
-    directive default_type;
-    directive include;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;
 };

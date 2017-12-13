@@ -1,5 +1,5 @@
 //
-//  diagnostics.h
+//  errors.h
 //  pomelo
 //
 //  Created by Edmund Kapusniak on 11/12/2017.
@@ -21,19 +21,19 @@
 #define PRINTF_FORMAT( x, y ) __attribute__(( format( printf, x, y ) ))
 
 
-class diagnostics;
-typedef std::shared_ptr< diagnostics > diagnostics_ptr;
+class errors;
+typedef std::shared_ptr< errors > errors_ptr;
 
 
 typedef size_t srcloc;
 
 
-class diagnostics
+class errors
 {
 public:
 
-    explicit diagnostics( FILE* err );
-    ~diagnostics();
+    explicit errors( FILE* err );
+    ~errors();
     
     void new_file( srcloc sloc, std::string_view name );
     void new_line( srcloc sloc );
