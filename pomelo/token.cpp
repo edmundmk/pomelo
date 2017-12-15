@@ -9,6 +9,8 @@
 #include "token.h"
 
 
+extern const token NULL_TOKEN = { 0, 0, 0 };
+
 
 source::source( std::string_view path )
     :   _path( path )

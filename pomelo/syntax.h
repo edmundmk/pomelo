@@ -34,13 +34,14 @@ enum associativity
     ASSOC_NONE,
     ASSOC_LEFT,
     ASSOC_RIGHT,
+    ASSOC_NONASSOC,
 };
 
 
 struct directive
 {
-    token keyword;
-    std::string text;
+    token           keyword;
+    std::string     text;
 };
 
 struct syntax
@@ -48,47 +49,49 @@ struct syntax
     explicit syntax( source_ptr source );
     ~syntax();
 
-    source_ptr source;
-    directive include;
-    directive class_name;
-    directive token_prefix;
-    directive token_type;
+    source_ptr      source;
+    directive       include;
+    directive       class_name;
+    directive       token_prefix;
+    directive       token_type;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;
 };
 
 struct symbol
 {
-    token name;
-    int value           : ( sizeof( int ) * CHAR_BIT ) - 1;
-    int terminal        : 1;
+    token           name;
+    int             value           : ( sizeof( int ) * CHAR_BIT ) - 1;
+    int             is_terminal     : 1;
 };
 
 struct terminal : public symbol
 {
-    int precedence      : ( sizeof( int ) * CHAR_BIT ) - 2;
-    int associativity   : 2;
+    int             precedence      : ( sizeof( int ) * CHAR_BIT ) - 2;
+    int             associativity   : 2;
 };
 
 struct nonterminal : public symbol
 {
-    std::string type;
+    std::string     type;
     std::vector< rule_ptr > rules;
+    bool            defined;
 };
 
 struct rule_symbol
 {
-    symbol* symbol;
-    token stoken;
-    token sparam;
+    symbol*         symbol;
+    token           stoken;
+    token           sparam;
 };
 
 struct rule
 {
-    nonterminal* nonterminal;
+    nonterminal*    nonterminal;
     std::vector< rule_symbol > symbols;
-    terminal* precedence;
-    std::string action;
+    terminal*       precedence;
+    token           precetoken;
+    std::string     action;
 };
 
 

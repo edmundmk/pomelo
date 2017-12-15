@@ -16,6 +16,7 @@
 
 
 class parser;
+
 typedef std::shared_ptr< parser > parser_ptr;
 
 
@@ -32,20 +33,30 @@ public:
     
 private:
 
-    struct lexed { srcloc sloc; int c; token token; };
-
-    lexed lex();
-    std::string lex_block();
+    static const int TOKEN = -2;
+    static const int BLOCK = -3;
 
     void parse_directive();
     void parse_precedence( associativity associativity );
-    void parse_nonterminal( token token );
+    void parse_nonterminal();
+    void parse_rule( nonterminal* nonterminal );
     
+    bool terminal_token( token token );
+    symbol* declare_symbol( token token );
+    terminal* declare_terminal( token token );
+    nonterminal* declare_nonterminal( token token );
+
+    void next();
+    void expected( const char* expected );
 
     errors_ptr _errors;
     syntax_ptr _syntax;
     FILE* _file;
     srcloc _sloc;
+    srcloc _tloc;
+    int _lexed;
+    token _token;
+    std::string _block;
     int _precedence;
 
 };

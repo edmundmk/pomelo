@@ -25,6 +25,8 @@ template <> struct std::hash< token >;
 typedef std::shared_ptr< source > source_ptr;
 
 
+extern const token NULL_TOKEN;
+
 struct token
 {
     srcloc sloc;
@@ -35,7 +37,6 @@ struct token
     bool operator == ( const token& t ) const   { return text == t.text; }
     bool operator != ( const token& t ) const   { return text == t.text; }
 };
-
 
 template <> struct std::hash< token >
 {
