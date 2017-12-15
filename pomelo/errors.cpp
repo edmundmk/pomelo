@@ -83,7 +83,7 @@ void errors::diagnostic( srcloc sloc, const char* kind, const char* format, va_l
     );
     l--;
     
-    int line = (int)( l - _lines.begin() ) + 1;
+    int line = (int)( l - _lines.begin() ) - f->line + 1;
     int column = (int)( sloc - *l );
     
     fprintf

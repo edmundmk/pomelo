@@ -13,6 +13,12 @@
 parser::parser( errors_ptr errors, syntax_ptr syntax )
     :   _errors( errors )
     ,   _syntax( syntax )
+    ,   _file( nullptr )
+    ,   _sloc( 0 )
+    ,   _tloc( 0 )
+    ,   _lexed( EOF )
+    ,   _token( NULL_TOKEN )
+    ,   _precedence( 0 )
 {
 }
 
@@ -26,8 +32,8 @@ void parser::parse( const char* path )
     // Open file.
     srcloc sloc = 0;
     _errors->new_file( sloc, path );
-    FILE* f = fopen( path, "r" );
-    if ( ! f )
+    _file = fopen( path, "r" );
+    if ( ! _file )
     {
         _errors->error( sloc, "unable to open file '%s'", path );
         return;
@@ -70,8 +76,9 @@ void parser::parse( const char* path )
                 _syntax->source->text( nterm->name )
             );
         }
-
     }
+    
+    fclose( _file );
 }
 
 
@@ -132,13 +139,14 @@ void parser::parse_directive()
     directive->keyword = _token;
     
     next();
+    
     if ( _lexed != BLOCK )
     {
         expected( "code block" );
         return;
     }
 
-    directive->text = _block;
+    directive->text = _block.size() ? _block : " ";
     next();
 }
 
@@ -460,15 +468,48 @@ void parser::next()
         }
         else if ( c == '{' )
         {
-            c = fgetc( _file );
-            _sloc += 1;
-            
             _block.clear();
-            while ( c != '}' )
+            size_t brace_depth = 1;
+            while ( true )
             {
-                _block.push_back( c );
                 c = fgetc( _file );
                 _sloc += 1;
+            
+                if ( c == '{' )
+                {
+                    brace_depth += 1;
+                }
+                if ( c == '}' )
+                {
+                    brace_depth -= 1;
+                    if ( ! brace_depth )
+                    {
+                        break;
+                    }
+                }
+                else if ( c == '\r' )
+                {
+                    c = fgetc( _file );
+                    _sloc += 1;
+                
+                    if ( c != '\n' )
+                    {
+                        ungetc( c, _file );
+                        _sloc -= 1;
+                    }
+                    else
+                    {
+                        _block.push_back( '\r' );
+                    }
+                
+                    _errors->new_line( _sloc );
+                }
+                else if ( c == '\n' )
+                {
+                    _errors->new_line( _sloc );
+                }
+                
+                _block.push_back( c );
             }
             
             _lexed = BLOCK;

@@ -50,6 +50,8 @@ token source::new_token( srcloc sloc, std::string_view text )
             }
             std::swap( _lookup, new_lookup );
         }
+        
+        _lookup.emplace( _text.data() + toff, toff );
     }
 
     // Construct a token.
