@@ -233,6 +233,8 @@ void parser::parse_rule( nonterminal* nonterminal )
 {
     rule_ptr rule = std::make_unique< ::rule >();
     rule->nonterminal = nonterminal;
+    rule->lostart = _syntax->locations.size();
+    rule->locount = 0;
     rule->precedence = nullptr;
     rule->precetoken = NULL_TOKEN;
 
@@ -240,11 +242,12 @@ void parser::parse_rule( nonterminal* nonterminal )
     {
         if ( _lexed == TOKEN )
         {
-            rule_symbol rs = { declare_symbol( _token ), _token, NULL_TOKEN };
+            symbol* symbol = declare_symbol( _token );
+            location l = { rule.get(), symbol, _token, NULL_TOKEN };
             
-            if ( rs.symbol->is_terminal && ! rule->precedence )
+            if ( l.symbol->is_terminal && ! rule->precedence )
             {
-                rule->precedence = (terminal*)rs.symbol;
+                rule->precedence = (terminal*)l.symbol;
                 rule->precetoken = _token;
             }
             
@@ -254,7 +257,7 @@ void parser::parse_rule( nonterminal* nonterminal )
                 next();
                 if ( _lexed == TOKEN )
                 {
-                    rs.sparam = _token;
+                    l.sparam = _token;
 
                     next();
                     if ( _lexed == ')' )
@@ -272,10 +275,15 @@ void parser::parse_rule( nonterminal* nonterminal )
                 }
             }
 
-            rule->symbols.push_back( rs );
+            _syntax->locations.push_back( l );
+            rule->locount += 1;
         }
         else if ( _lexed == '.' )
         {
+            location l = { rule.get(), nullptr, _token, NULL_TOKEN };
+            _syntax->locations.push_back( l );
+            rule->locount += 1;
+
             next();
             break;
         }

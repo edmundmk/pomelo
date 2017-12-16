@@ -17,10 +17,11 @@
 #include "token.h"
 
 struct directive;
+struct location;
 struct syntax;
+struct symbol;
 struct terminal;
 struct nonterminal;
-struct rule_symbol;
 struct rule;
 
 typedef std::shared_ptr< syntax > syntax_ptr;
@@ -44,10 +45,20 @@ struct directive
     std::string     text;
 };
 
+struct location
+{
+    rule*           rule;
+    symbol*         symbol;
+    token           stoken;
+    token           sparam;
+};
+
 struct syntax
 {
     explicit syntax( source_ptr source );
     ~syntax();
+    
+    void print();
 
     source_ptr      source;
     directive       include;
@@ -56,6 +67,7 @@ struct syntax
     directive       token_type;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;
+    std::vector< location > locations;
 };
 
 struct symbol
@@ -78,17 +90,11 @@ struct nonterminal : public symbol
     bool            defined;
 };
 
-struct rule_symbol
-{
-    symbol*         symbol;
-    token           stoken;
-    token           sparam;
-};
-
 struct rule
 {
     nonterminal*    nonterminal;
-    std::vector< rule_symbol > symbols;
+    size_t          lostart;
+    size_t          locount;
     terminal*       precedence;
     token           precetoken;
     std::string     action;

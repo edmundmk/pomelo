@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DB28F5D61FE533D80069E8D7 /* lalr1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB28F5D41FE533D80069E8D7 /* lalr1.cpp */; };
 		DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB3070D91FDCA6A000AACBDC /* main.cpp */; };
 		DB6564EA1FDF26E000F6AAF8 /* syntax.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564E81FDF26E000F6AAF8 /* syntax.cpp */; };
 		DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EB1FDF28A000F6AAF8 /* token.cpp */; };
@@ -27,6 +28,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DB28F5D41FE533D80069E8D7 /* lalr1.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lalr1.cpp; sourceTree = "<group>"; };
+		DB28F5D51FE533D80069E8D7 /* lalr1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lalr1.h; sourceTree = "<group>"; };
 		DB3070D61FDCA6A000AACBDC /* pomelo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = pomelo; sourceTree = BUILT_PRODUCTS_DIR; };
 		DB3070D91FDCA6A000AACBDC /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		DB3070E31FDDCBDE00AACBDC /* DESIGN */ = {isa = PBXFileReference; lastKnownFileType = text; path = DESIGN; sourceTree = "<group>"; };
@@ -73,6 +76,8 @@
 			children = (
 				DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */,
 				DB6564F61FDF3E9D00F6AAF8 /* errors.h */,
+				DB28F5D41FE533D80069E8D7 /* lalr1.cpp */,
+				DB28F5D51FE533D80069E8D7 /* lalr1.h */,
 				DB3070D91FDCA6A000AACBDC /* main.cpp */,
 				DB6564EF1FDF310E00F6AAF8 /* parser.cpp */,
 				DB6564F01FDF310E00F6AAF8 /* parser.h */,
@@ -143,6 +148,7 @@
 			files = (
 				DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */,
 				DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */,
+				DB28F5D61FE533D80069E8D7 /* lalr1.cpp in Sources */,
 				DB6564EA1FDF26E000F6AAF8 /* syntax.cpp in Sources */,
 				DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */,
 				DB6564F71FDF3E9D00F6AAF8 /* errors.cpp in Sources */,
