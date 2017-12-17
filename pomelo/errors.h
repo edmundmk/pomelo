@@ -21,6 +21,8 @@
 #define PRINTF_FORMAT( x, y ) __attribute__(( format( printf, x, y ) ))
 
 
+struct file_line;
+struct source_locator;
 class errors;
 typedef std::shared_ptr< errors > errors_ptr;
 
@@ -28,15 +30,26 @@ typedef std::shared_ptr< errors > errors_ptr;
 typedef size_t srcloc;
 
 
+struct file_line
+{
+    const char* file;
+    int line;
+    int column;
+};
+
+
+struct source_locator
+{
+    virtual file_line source_location( srcloc sloc ) = 0;
+};
+
+
 class errors
 {
 public:
 
-    explicit errors( FILE* err );
+    errors( source_locator* locator, FILE* err );
     ~errors();
-    
-    void new_file( srcloc sloc, std::string_view name );
-    void new_line( srcloc sloc );
     
     void error( srcloc sloc, const char* format, ... ) PRINTF_FORMAT( 3, 4 );
     void warning( srcloc sloc, const char* format, ... ) PRINTF_FORMAT( 3, 4 );
@@ -45,19 +58,11 @@ public:
     
 private:
 
-    struct file
-    {
-        srcloc      sloc;
-        std::string name;
-        int         line;
-    };
-    
     void diagnostic( srcloc sloc, const char* kind, const char* format, va_list args );
 
-    FILE*                   _err;
-    std::vector< file >     _files;
-    std::vector< srcloc >   _lines;
-    bool                    _has_error;
+    FILE* _err;
+    source_locator* _locator;
+    bool _has_error;
 
 };
 

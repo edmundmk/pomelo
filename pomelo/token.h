@@ -44,20 +44,31 @@ template <> struct std::hash< token >
 };
 
 
-class source
+class source : public source_locator
 {
 public:
     
     explicit source( std::string_view path );
     source();
     
+    void new_line( srcloc sloc );
+    file_line source_location( srcloc sloc ) override;
+
     token new_token( srcloc sloc, std::string_view text );
     const char* text( const token& token ) const;
     
 
 private:
 
+    struct file
+    {
+        srcloc      sloc;
+        std::string name;
+        int         line;
+    };
+    
     std::string _path;
+    std::vector< srcloc > _lines;
     std::vector< char > _text;
     std::unordered_map< std::string_view, size_t > _lookup;
 

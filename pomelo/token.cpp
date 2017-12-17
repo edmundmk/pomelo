@@ -6,7 +6,9 @@
 //  Copyright © 2017 Edmund Kapusniak. All rights reserved.
 //
 
+
 #include "token.h"
+#include <assert.h>
 
 
 extern const token NULL_TOKEN = { 0, 0, 0 };
@@ -15,12 +17,39 @@ extern const token NULL_TOKEN = { 0, 0, 0 };
 source::source( std::string_view path )
     :   _path( path )
 {
+    _lines.push_back( 0 );
     _text.push_back( '\0' );
 }
 
 source::source()
 {
 }
+
+
+void source::new_line( srcloc sloc )
+{
+    assert( ! _lines.empty() && _lines.back() < sloc );
+    _lines.push_back( sloc );
+}
+
+file_line source::source_location( srcloc sloc )
+{
+    assert( ! _lines.empty() );
+
+    auto l = std::upper_bound
+    (
+        _lines.begin(),
+        _lines.end(),
+        sloc
+    );
+    l--;
+    
+    int line = (int)( l - _lines.begin() ) + 1;
+    int column = (int)( sloc - *l );
+    
+    return { _path.c_str(), line, column };
+}
+
 
 
 token source::new_token( srcloc sloc, std::string_view text )

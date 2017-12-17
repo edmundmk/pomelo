@@ -10,29 +10,15 @@
 #include <assert.h>
 
 
-errors::errors( FILE* err )
+errors::errors( source_locator* locator, FILE* err )
     :   _err( err )
+    ,   _locator( locator )
     ,   _has_error( false )
 {
 }
 
 errors::~errors()
 {
-}
-
-
-void errors::new_file( srcloc sloc, std::string_view name )
-{
-    assert( _files.empty() || _files.back().sloc < sloc );
-    _files.push_back( { sloc, std::string( name ), (int)_lines.size() } );
-    _lines.push_back( sloc );
-}
-
-void errors::new_line( srcloc sloc )
-{
-    assert( ! _files.empty() && _files.back().sloc < sloc );
-    assert( ! _lines.empty() && _lines.back() < sloc );
-    _lines.push_back( sloc );
 }
 
 
@@ -63,36 +49,14 @@ bool errors::has_error()
 
 void errors::diagnostic( srcloc sloc, const char* kind, const char* format, va_list args )
 {
-    assert( ! _files.empty() );
-    assert( ! _lines.empty() );
-
-    auto f = std::upper_bound
-    (
-        _files.begin(),
-        _files.end(),
-        sloc,
-        []( srcloc a, const file& b ) { return a < b.sloc; }
-    );
-    f--;
-    
-    auto l = std::upper_bound
-    (
-        _lines.begin(),
-        _lines.end(),
-        sloc
-    );
-    l--;
-    
-    int line = (int)( l - _lines.begin() ) - f->line + 1;
-    int column = (int)( sloc - *l );
-    
+    file_line fl = _locator->source_location( sloc );
     fprintf
     (
         _err,
         "%s:%d:%d: %s: ",
-        f->name.c_str(),
-        line,
-        column,
+        fl.file,
+        fl.line,
+        fl.column,
         kind
     );
     vfprintf

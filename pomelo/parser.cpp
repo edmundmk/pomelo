@@ -31,7 +31,6 @@ void parser::parse( const char* path )
 {
     // Open file.
     srcloc sloc = 0;
-    _errors->new_file( sloc, path );
     _file = fopen( path, "r" );
     if ( ! _file )
     {
@@ -60,6 +59,38 @@ void parser::parse( const char* path )
             expected( nullptr );
             next();
         }
+    }
+    
+    // Give all symbols a value.
+    std::vector< symbol* > symbols;
+    for ( const auto& tsym : _syntax->terminals )
+    {
+        symbols.push_back( tsym.second.get() );
+    }
+    for ( const auto& nsym : _syntax->nonterminals )
+    {
+        symbols.push_back( nsym.second.get() );
+    }
+    std::sort
+    (
+        symbols.begin(),
+        symbols.end(),
+        []( symbol* a, symbol* b )
+        {
+            if ( a->is_terminal != b->is_terminal )
+            {
+                return a->is_terminal ? true : false;
+            }
+            else
+            {
+                return a->name.sloc < b->name.sloc;
+            }
+        }
+    );
+    int value = 1;
+    for ( symbol* sym : symbols )
+    {
+        sym->value = value++;
     }
     
     // Check for a valid start symbol.
@@ -420,12 +451,12 @@ void parser::next()
                 _sloc -= 1;
             }
         
-            _errors->new_line( _sloc );
+            _syntax->source->new_line( _sloc );
             continue;
         }
         else if ( c == '\n' )
         {
-            _errors->new_line( _sloc );
+            _syntax->source->new_line( _sloc );
             continue;
         }
         else if ( c == '/' )
@@ -454,11 +485,11 @@ void parser::next()
                             _sloc -= 1;
                         }
                     
-                        _errors->new_line( _sloc );
+                        _syntax->source->new_line( _sloc );
                     }
                     else if ( c == '\n' )
                     {
-                        _errors->new_line( _sloc );
+                        _syntax->source->new_line( _sloc );
                     }
                 }
                 continue;
@@ -520,11 +551,11 @@ void parser::next()
                         _block.push_back( '\r' );
                     }
                 
-                    _errors->new_line( _sloc );
+                    _syntax->source->new_line( _sloc );
                 }
                 else if ( c == '\n' )
                 {
-                    _errors->new_line( _sloc );
+                    _syntax->source->new_line( _sloc );
                 }
                 
                 _block.push_back( c );
