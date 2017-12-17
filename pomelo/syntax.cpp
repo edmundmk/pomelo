@@ -11,6 +11,7 @@
 
 syntax::syntax( source_ptr source )
     :   source( source )
+    ,   start( nullptr )
 {
 }
 

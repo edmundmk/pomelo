@@ -61,6 +61,12 @@ void parser::parse( const char* path )
             next();
         }
     }
+    
+    // Check for a valid start symbol.
+    if ( ! _syntax->start )
+    {
+        _errors->error( 0, "no start symbol defined" );
+    }
 
     // Check that all nonterminals have been defined.
     for ( const auto& entry : _syntax->nonterminals )
@@ -182,6 +188,10 @@ void parser::parse_precedence( associativity associativity )
 void parser::parse_nonterminal()
 {
     nonterminal* nonterminal = declare_nonterminal( _token );
+    if ( ! _syntax->start )
+    {
+        _syntax->start = nonterminal;
+    }
 
     if ( nonterminal->defined )
     {

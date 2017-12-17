@@ -65,6 +65,7 @@ struct syntax
     directive       class_name;
     directive       token_prefix;
     directive       token_type;
+    nonterminal*    start;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;
     std::vector< location > locations;
