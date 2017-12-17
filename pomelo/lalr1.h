@@ -16,39 +16,20 @@
 #include <set>
 #include <unordered_map>
 #include "syntax.h"
+#include "automata.h"
 
 
-struct closure;
-struct closure_deleter;
 struct closure_key;
 struct location_compare;
-struct transition;
-struct state;
-struct automata;
-class makedfa;
+class lalr1;
 
-typedef std::unique_ptr< closure, closure_deleter > closure_ptr;
-typedef std::unique_ptr< state > state_ptr;
-typedef std::shared_ptr< automata > automata_ptr;
-typedef std::shared_ptr< makedfa > makedfa_ptr;
+typedef std::shared_ptr< lalr1 > lalr1_ptr;
 
 
 
 /*
-    A closure of locations in the grammar.
+    Closure keys used to look up already-constructed states.
 */
-
-struct closure
-{
-    size_t hash;
-    size_t size;
-    size_t locations[];
-};
-
-struct closure_deleter
-{
-    void operator () ( closure* p ) const;
-};
 
 struct closure_key
 {
@@ -86,40 +67,16 @@ private:
 
 
 
-
-/*
-    A discrete finite automata.
-*/
-
-struct transition
-{
-    symbol*     symbol;
-    state*      state;
-};
-
-struct state
-{
-    closure_ptr closure;
-    std::vector< transition > transitions;
-};
-
-struct automata
-{
-    std::vector< state_ptr > states;
-};
-
-
-
 /*
     Build a LALR(1) DFA from the rules in the grammar.
 */
 
-class makedfa
+class lalr1
 {
 public:
 
-    makedfa( errors_ptr errors, automata_ptr automata );
-    ~makedfa();
+    lalr1( errors_ptr errors, automata_ptr automata );
+    ~lalr1();
 
     void construct( syntax* syntax );
 

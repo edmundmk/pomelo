@@ -11,15 +11,6 @@
 
 
 
-/*
-    Deletes closure pointers using free().
-*/
-
-void closure_deleter::operator () ( closure* p ) const
-{
-    free( p );
-}
-
 
 
 /*
@@ -85,7 +76,7 @@ bool location_compare::operator () ( size_t a, size_t b ) const
     Builds a LALR(1) DFA from the grammar.
 */
 
-makedfa::makedfa( errors_ptr errors, automata_ptr automata )
+lalr1::lalr1( errors_ptr errors, automata_ptr automata )
     :   _errors( errors )
     ,   _automata( automata )
     ,   _locations( location_compare( nullptr ) )
@@ -93,12 +84,12 @@ makedfa::makedfa( errors_ptr errors, automata_ptr automata )
 {
 }
 
-makedfa::~makedfa()
+lalr1::~lalr1()
 {
 }
 
 
-void makedfa::construct( syntax* syntax )
+void lalr1::construct( syntax* syntax )
 {
     _locations = std::set< size_t, location_compare >( location_compare( syntax ) );
 
@@ -122,7 +113,7 @@ void makedfa::construct( syntax* syntax )
 }
 
 
-void makedfa::add_location( syntax* syntax, size_t locindex )
+void lalr1::add_location( syntax* syntax, size_t locindex )
 {
     // Add location.
     if ( ! _locations.insert( locindex ).second )
@@ -144,7 +135,7 @@ void makedfa::add_location( syntax* syntax, size_t locindex )
 }
 
 
-void makedfa::add_transitions( syntax* syntax, state* pstate )
+void lalr1::add_transitions( syntax* syntax, state* pstate )
 {
     // Construct each final state.
     size_t i = 0;
@@ -181,7 +172,7 @@ void makedfa::add_transitions( syntax* syntax, state* pstate )
 }
 
 
-void makedfa::alloc_scratch( size_t capacity )
+void lalr1::alloc_scratch( size_t capacity )
 {
     if ( _scratch_capacity < capacity )
     {
@@ -191,7 +182,7 @@ void makedfa::alloc_scratch( size_t capacity )
 }
 
 
-state* makedfa::close_state()
+state* lalr1::close_state()
 {
     // Create closure.
     std::hash< size_t > hash;

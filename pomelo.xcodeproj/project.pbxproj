@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DB1019941FE6DFCA00AD9E26 /* automata.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB1019921FE6DFCA00AD9E26 /* automata.cpp */; };
 		DB28F5D61FE533D80069E8D7 /* lalr1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB28F5D41FE533D80069E8D7 /* lalr1.cpp */; };
 		DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB3070D91FDCA6A000AACBDC /* main.cpp */; };
 		DB6564EA1FDF26E000F6AAF8 /* syntax.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564E81FDF26E000F6AAF8 /* syntax.cpp */; };
@@ -28,6 +29,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DB1019921FE6DFCA00AD9E26 /* automata.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = automata.cpp; sourceTree = "<group>"; };
+		DB1019931FE6DFCA00AD9E26 /* automata.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = automata.h; sourceTree = "<group>"; };
 		DB28F5D41FE533D80069E8D7 /* lalr1.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lalr1.cpp; sourceTree = "<group>"; };
 		DB28F5D51FE533D80069E8D7 /* lalr1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lalr1.h; sourceTree = "<group>"; };
 		DB3070D61FDCA6A000AACBDC /* pomelo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = pomelo; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +77,8 @@
 		DB3070D81FDCA6A000AACBDC /* pomelo */ = {
 			isa = PBXGroup;
 			children = (
+				DB1019921FE6DFCA00AD9E26 /* automata.cpp */,
+				DB1019931FE6DFCA00AD9E26 /* automata.h */,
 				DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */,
 				DB6564F61FDF3E9D00F6AAF8 /* errors.h */,
 				DB28F5D41FE533D80069E8D7 /* lalr1.cpp */,
@@ -146,6 +151,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DB1019941FE6DFCA00AD9E26 /* automata.cpp in Sources */,
 				DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */,
 				DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */,
 				DB28F5D61FE533D80069E8D7 /* lalr1.cpp in Sources */,
