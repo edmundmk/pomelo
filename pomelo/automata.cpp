@@ -47,21 +47,16 @@ void automata::print()
         {
             size_t iloc = state->closure->locations[ i ];
             const location& loc = syntax->locations[ iloc ];
-            printf( "<tr><td>" );
+            printf( "<tr><td>%s →", syntax->source->text( loc.rule->nonterminal->name ) );
             for ( size_t i = 0; i < loc.rule->locount; ++i )
             {
                 size_t jloc = loc.rule->lostart + i;
                 const location& loc = syntax->locations[ jloc ];
                 if ( iloc == jloc )
                 {
-                    printf( "%s*", i > 0 ? " " : "" );
+                    printf( " ·" );
                 }
-                printf
-                (
-                    "%s%s",
-                    ( i > 0 || iloc == jloc )? " " : "",
-                    loc.stoken ? syntax->source->text( loc.stoken ) : "."
-                );
+                printf( " %s", loc.stoken ? syntax->source->text( loc.stoken ) : "." );
             }
             printf( "</td></tr>\n" );
         }
