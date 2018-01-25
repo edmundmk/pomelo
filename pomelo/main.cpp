@@ -11,6 +11,7 @@
 #include "errors.h"
 #include "syntax.h"
 #include "parser.h"
+#include "lalr1.h"
 
 
 int main( int argc, const char* argv[] )
@@ -28,7 +29,9 @@ int main( int argc, const char* argv[] )
         return EXIT_FAILURE;
     }
     
-    syntax->print();
+    lalr1_ptr lalr1 = std::make_shared< ::lalr1 >( errors, syntax );
+    automata_ptr automata = lalr1->construct();
+    automata->print();
 
     return EXIT_SUCCESS;
 }

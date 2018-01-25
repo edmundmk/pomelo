@@ -61,6 +61,55 @@ void parser::parse( const char* path )
         }
     }
     
+    fclose( _file );
+    
+    // Check for a valid start symbol.
+    if ( _syntax->start )
+    {
+        // Start symbol is special.
+        nonterminal_ptr start = std::make_unique< nonterminal >();
+        start->name         = _syntax->source->new_token( 0, "@start" );
+        start->value        = -1;
+        start->is_terminal  = false;
+        start->type         = _syntax->start->type;
+        start->defined      = true;
+        
+        rule_ptr rule = std::make_unique< ::rule >();
+        rule->nonterminal   = start.get();
+        rule->lostart       = _syntax->locations.size();
+        rule->locount       = 2;
+        rule->precedence    = nullptr;
+        rule->precetoken    = NULL_TOKEN;
+        
+        _syntax->locations.push_back( { rule.get(), _syntax->start, start->name, NULL_TOKEN } );
+        _syntax->locations.push_back( { rule.get(), nullptr, NULL_TOKEN, NULL_TOKEN } );
+        
+        start->rules.push_back( std::move( rule ) );
+        _syntax->start = start.get();
+        _syntax->nonterminals.emplace( start->name, std::move( start ) );
+    }
+    else
+    {
+        _errors->error( 0, "no start symbol defined" );
+    }
+
+
+    // Check that all nonterminals have been defined.
+    for ( const auto& entry : _syntax->nonterminals )
+    {
+        nonterminal* nterm = entry.second.get();
+        
+        if ( nterm->rules.empty() )
+        {
+            _errors->error
+            (
+                nterm->name.sloc,
+                "nonterminal '%s' has not been defined",
+                _syntax->source->text( nterm->name )
+            );
+        }
+    }
+    
     // Give all symbols a value.
     std::vector< symbol* > symbols;
     for ( const auto& tsym : _syntax->terminals )
@@ -92,30 +141,6 @@ void parser::parse( const char* path )
     {
         sym->value = value++;
     }
-    
-    // Check for a valid start symbol.
-    if ( ! _syntax->start )
-    {
-        _errors->error( 0, "no start symbol defined" );
-    }
-
-    // Check that all nonterminals have been defined.
-    for ( const auto& entry : _syntax->nonterminals )
-    {
-        nonterminal* nterm = entry.second.get();
-        
-        if ( nterm->rules.empty() )
-        {
-            _errors->error
-            (
-                nterm->name.sloc,
-                "nonterminal '%s' has not been defined",
-                _syntax->source->text( nterm->name )
-            );
-        }
-    }
-    
-    fclose( _file );
 }
 
 
@@ -321,7 +346,7 @@ void parser::parse_rule( nonterminal* nonterminal )
         }
         else if ( _lexed == '.' )
         {
-            location l = { rule.get(), nullptr, _token, NULL_TOKEN };
+            location l = { rule.get(), nullptr, NULL_TOKEN, NULL_TOKEN };
             _syntax->locations.push_back( l );
             rule->locount += 1;
 

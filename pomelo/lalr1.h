@@ -60,7 +60,6 @@ public:
 
 private:
 
-    std::less< symbol* > _less;
     syntax* _syntax;
 
 };
@@ -75,16 +74,17 @@ class lalr1
 {
 public:
 
-    lalr1( errors_ptr errors, automata_ptr automata );
+    explicit lalr1( errors_ptr errors, syntax_ptr syntax );
     ~lalr1();
 
-    void construct( syntax* syntax );
+    automata_ptr construct();
 
 
 private:
 
-    void    add_location( syntax* syntax, size_t locindex );
-    void    add_transitions( syntax* syntax, state* pstate );
+    void    add_location( size_t locindex );
+    void    add_transitions( state* pstate );
+    void    add_lookback( transition* reduce );
     void    alloc_scratch( size_t capacity );
     state*  close_state();
 

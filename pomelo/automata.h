@@ -13,18 +13,23 @@
 
 #include <memory>
 #include <vector>
+#include "syntax.h"
 
 
 struct symbol;
 struct closure;
 struct closure_deleter;
-struct transition;
 struct state;
 struct automata;
+struct transition;
+struct lookback;
+
 
 typedef std::unique_ptr< closure, closure_deleter > closure_ptr;
-typedef std::unique_ptr< state > state_ptr;
 typedef std::shared_ptr< automata > automata_ptr;
+typedef std::unique_ptr< state > state_ptr;
+typedef std::unique_ptr< transition > transition_ptr;
+typedef std::unique_ptr< lookback > lookback_ptr;
 
 
 
@@ -52,31 +57,39 @@ struct closure_deleter
     A discrete finite automata.
 */
 
-struct transition
+struct automata
 {
-    symbol*     symbol;
-    state*      state;
+    explicit automata( syntax_ptr syntax );
+    ~automata();
+
+    void print();
+
+    syntax_ptr syntax;
+    std::vector< state_ptr > states;
 };
 
 struct state
 {
     closure_ptr closure;
-    std::vector< transition > transitions;
+    std::vector< transition_ptr > transitions;
 };
 
-struct automata
+struct transition
 {
-    std::vector< state_ptr > states;
+    state* prev;
+    state* next;
+    symbol* symbol;
+    lookback_ptr lookback;
 };
 
-
-
+struct lookback
+{
+    std::vector< transition* > lookback;
+};
 
 
 
 
 #endif
-
-
 
 

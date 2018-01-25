@@ -7,9 +7,8 @@
 //
 
 
+#include <assert.h>
 #include "lalr1.h"
-
-
 
 
 
@@ -58,8 +57,12 @@ bool location_compare::operator () ( size_t a, size_t b ) const
     
     if ( al.symbol != bl.symbol )
     {
-        // Compare symbols.
-        return _less( al.symbol, bl.symbol );
+        // Compare symbols.  null symbols are greater than all others.
+        if ( al.symbol == nullptr )
+            return false;
+        if ( bl.symbol == nullptr )
+            return true;
+        return al.symbol->value < bl.symbol->value;
     }
     else
     {
@@ -76,10 +79,10 @@ bool location_compare::operator () ( size_t a, size_t b ) const
     Builds a LALR(1) DFA from the grammar.
 */
 
-lalr1::lalr1( errors_ptr errors, automata_ptr automata )
+lalr1::lalr1( errors_ptr errors, syntax_ptr syntax )
     :   _errors( errors )
-    ,   _automata( automata )
-    ,   _locations( location_compare( nullptr ) )
+    ,   _automata( std::make_shared< automata >( syntax ) )
+    ,   _locations( location_compare( syntax.get() ) )
     ,   _scratch_capacity( 0 )
 {
 }
@@ -89,14 +92,12 @@ lalr1::~lalr1()
 }
 
 
-void lalr1::construct( syntax* syntax )
+automata_ptr lalr1::construct()
 {
-    _locations = std::set< size_t, location_compare >( location_compare( syntax ) );
-
     // Construct initial state.
-    for ( const auto& rule : syntax->start->rules )
+    for ( const auto& rule : _automata->syntax->start->rules )
     {
-        add_location( syntax, rule->lostart );
+        add_location( rule->lostart );
     }
     close_state();
     
@@ -105,15 +106,28 @@ void lalr1::construct( syntax* syntax )
     {
         state* next = _pending.front();
         _pending.pop_front();
-        add_transitions( syntax, next );
+        add_transitions( next );
     }
 
-    // Now work out LALR(1) follow sets.
-    // TODO.
+    // Calculate lookback relations, which link reduction transitions back
+    // to the transitions which shift the newly-reduced symbol.
+    for ( const auto& state : _automata->states )
+    {
+        for ( const auto& transition : state->transitions )
+        {
+            if ( ! transition->symbol->is_terminal )
+            {
+                add_lookback( transition.get() );
+            }
+        }
+    }
+    
+    // Return constructed automata.
+    return _automata;
 }
 
 
-void lalr1::add_location( syntax* syntax, size_t locindex )
+void lalr1::add_location( size_t locindex )
 {
     // Add location.
     if ( ! _locations.insert( locindex ).second )
@@ -123,34 +137,41 @@ void lalr1::add_location( syntax* syntax, size_t locindex )
     }
     
     // If the next symbol is a nonterminal, add initial states for symbol.
-    const location& l = syntax->locations.at( locindex );
+    const location& l = _automata->syntax->locations.at( locindex );
     if ( l.symbol && ! l.symbol->is_terminal )
     {
         nonterminal* nsym = (nonterminal*)l.symbol;
         for ( const auto& rule : nsym->rules )
         {
-            add_location( syntax, rule->lostart );
+            add_location( rule->lostart );
         }
     }
 }
 
 
-void lalr1::add_transitions( syntax* syntax, state* pstate )
+void lalr1::add_transitions( state* pstate )
 {
-    // Construct each final state.
+    // Construct each following state.  Locations in the closure are sorted
+    // by the next symbol in their rule, so rules are grouped.
     size_t i = 0;
     while ( i < pstate->closure->size )
     {
         // Find next symbol.
         size_t iloc = pstate->closure->locations[ i ];
-        const location& l = syntax->locations.at( iloc );
+        const location& l = _automata->syntax->locations.at( iloc );
         symbol* nsym = l.symbol;
         
-        // Find all locations which have this as the next symbol.
+        // If the next symbol is null or eof, the following locations all reduce.
+        if ( ! nsym )
+        {
+            break;
+        }
+        
+        // Find all other locations which have this as the next symbol.
         while ( i < pstate->closure->size )
         {
             size_t iloc = pstate->closure->locations[ i ];
-            const location& l = syntax->locations.at( iloc );
+            const location& l = _automata->syntax->locations.at( iloc );
             
             // Check if this location can shift the same symbol.
             if ( l.symbol != nsym )
@@ -161,13 +182,63 @@ void lalr1::add_transitions( syntax* syntax, state* pstate )
             // Add following location to the state.
             if ( l.symbol )
             {
-                add_location( syntax, iloc + 1 );
+                add_location( iloc + 1 );
             }
+            
+            ++i;
         }
         
         // Close state.
         state* nstate = close_state();
-        pstate->transitions.push_back( { nsym, nstate } );
+        transition_ptr trans = std::make_unique< transition >();
+        trans->prev = pstate;
+        trans->next = nstate;
+        trans->symbol = nsym;
+        pstate->transitions.push_back( std::move( trans ) );
+    }
+}
+
+
+void lalr1::add_lookback( transition* reduce )
+{
+    // This transition is a nonterminal.
+    assert( ! reduce->symbol->is_terminal );
+    nonterminal* nsym = (nonterminal*)reduce->symbol;
+
+    // Follow each rule to find the reduction transition.
+    for ( const auto& rule : nsym->rules )
+    {
+        transition* final = nullptr;
+        state* state = reduce->prev;
+        
+        for ( size_t i = 0; i < rule->locount - 1; ++i )
+        {
+            size_t iloc = rule->lostart + i;
+            const location& loc = _automata->syntax->locations[ iloc ];
+            
+            // Follow transition.
+            ::state* prev = state;
+            for ( const auto& transition : state->transitions )
+            {
+                if ( transition->symbol == loc.symbol )
+                {
+                    final = transition.get();
+                    state = transition->next;
+                    break;
+                }
+            }
+            assert( state != prev );
+        }
+        
+        // Add lookback from the final transition to the original one.
+        if ( final )
+        {
+            if ( ! final->lookback )
+            {
+                final->lookback = std::make_unique< lookback >();
+            }
+            final->lookback->lookback.push_back( reduce );
+        }
     }
 }
 
