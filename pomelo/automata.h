@@ -22,14 +22,14 @@ struct closure_deleter;
 struct state;
 struct automata;
 struct transition;
-struct lookback;
+struct reducefrom;
 
 
 typedef std::unique_ptr< closure, closure_deleter > closure_ptr;
 typedef std::shared_ptr< automata > automata_ptr;
 typedef std::unique_ptr< state > state_ptr;
 typedef std::unique_ptr< transition > transition_ptr;
-typedef std::unique_ptr< lookback > lookback_ptr;
+typedef std::unique_ptr< reducefrom > reducefrom_ptr;
 
 
 
@@ -66,12 +66,15 @@ struct automata
 
     syntax_ptr syntax;
     std::vector< state_ptr > states;
+    std::vector< transition_ptr > transitions;
+    std::vector< reducefrom_ptr > reducefrom;
 };
 
 struct state
 {
     closure_ptr closure;
-    std::vector< transition_ptr > transitions;
+    std::vector< transition* > prev;
+    std::vector< transition* > next;
 };
 
 struct transition
@@ -79,12 +82,22 @@ struct transition
     state* prev;
     state* next;
     symbol* symbol;
-    lookback_ptr lookback;
+    std::vector< reducefrom* > rfrom; // links to reachable final transitions.
+    std::vector< reducefrom* > rgoto; // link from final transition to nonterminal.
 };
 
-struct lookback
+
+/*
+    Reducefroms link the last transition in a rule (that transitions to a state
+    that accepts the rule) with the transition that shifts the resulting
+    nonterminal symbol.  Lookahead sets flow from the state after the
+    nonterminal transition to the accept state after the last symbol.
+*/
+
+struct reducefrom
 {
-    std::vector< transition* > lookback;
+    transition* nonterminal; // transition shifting nonterminal symbol.
+    transition* finalsymbol; // final transition before accepting nonterminal.
 };
 
 

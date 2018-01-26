@@ -82,9 +82,10 @@ public:
 
 private:
 
+    bool    erasable_rule( rule* rule );
     void    add_location( size_t locindex );
     void    add_transitions( state* pstate );
-    void    add_lookback( transition* reduce );
+    void    add_reducefroms( transition* nonterm );
     void    alloc_scratch( size_t capacity );
     state*  close_state();
 

@@ -94,6 +94,35 @@ lalr1::~lalr1()
 
 automata_ptr lalr1::construct()
 {
+    // Find erasable nonterminals.
+    bool changed = true;
+    while ( changed )
+    {
+        changed = false;
+        for ( const auto& entry : _automata->syntax->nonterminals )
+        {
+            nonterminal* nsym = entry.second.get();
+
+            // If it's already erasable there's nothing to do.
+            if ( nsym->erasable )
+            {
+                continue;
+            }
+
+            // A nonterminal is erasable if there is at least one rule
+            // consisting only of erasable symbols.
+            for ( const auto& rule : nsym->rules )
+            {
+                if ( erasable_rule( rule.get() ) )
+                {
+                    nsym->erasable = true;
+                    changed = true;
+                    break;
+                }
+            }
+        }
+    }
+
     // Construct initial state.
     for ( const auto& rule : _automata->syntax->start->rules )
     {
@@ -109,21 +138,34 @@ automata_ptr lalr1::construct()
         add_transitions( next );
     }
 
-    // Calculate lookback relations, which link reduction transitions back
+    // Calculate reducefroms, which link final transitions back
     // to the transitions which shift the newly-reduced symbol.
-    for ( const auto& state : _automata->states )
+    for ( const auto& transition : _automata->transitions )
     {
-        for ( const auto& transition : state->transitions )
+        if ( ! transition->symbol->is_terminal )
         {
-            if ( ! transition->symbol->is_terminal )
-            {
-                add_lookback( transition.get() );
-            }
+            add_reducefroms( transition.get() );
         }
     }
     
     // Return constructed automata.
     return _automata;
+}
+
+
+bool lalr1::erasable_rule( rule* rule )
+{
+    // A rule is erasable if all symbols in it are erasable.
+    for ( size_t i = 0; i < rule->locount - 1; ++i )
+    {
+        size_t iloc = rule->lostart + i;
+        const location& loc = _automata->syntax->locations.at( iloc );
+        if ( loc.symbol->is_terminal || !( (nonterminal*)loc.symbol )->erasable )
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -162,7 +204,7 @@ void lalr1::add_transitions( state* pstate )
         symbol* nsym = l.symbol;
         
         // If the next symbol is null or eof, the following locations all reduce.
-        if ( ! nsym )
+        if ( ! nsym || ! nsym->value )
         {
             break;
         }
@@ -194,22 +236,24 @@ void lalr1::add_transitions( state* pstate )
         trans->prev = pstate;
         trans->next = nstate;
         trans->symbol = nsym;
-        pstate->transitions.push_back( std::move( trans ) );
+        pstate->next.push_back( trans.get() );
+        nstate->prev.push_back( trans.get() );
+        _automata->transitions.push_back( std::move( trans ) );
     }
 }
 
 
-void lalr1::add_lookback( transition* reduce )
+void lalr1::add_reducefroms( transition* nonterm )
 {
     // This transition is a nonterminal.
-    assert( ! reduce->symbol->is_terminal );
-    nonterminal* nsym = (nonterminal*)reduce->symbol;
+    assert( ! nonterm->symbol->is_terminal );
+    nonterminal* nsym = (nonterminal*)nonterm->symbol;
 
     // Follow each rule to find the reduction transition.
     for ( const auto& rule : nsym->rules )
     {
-        transition* final = nullptr;
-        state* state = reduce->prev;
+        transition* fsymbol = nullptr;
+        state* state = nonterm->prev;
         
         for ( size_t i = 0; i < rule->locount - 1; ++i )
         {
@@ -218,11 +262,11 @@ void lalr1::add_lookback( transition* reduce )
             
             // Follow transition.
             ::state* prev = state;
-            for ( const auto& transition : state->transitions )
+            for ( const auto& transition : state->next )
             {
                 if ( transition->symbol == loc.symbol )
                 {
-                    final = transition.get();
+                    fsymbol = transition;
                     state = transition->next;
                     break;
                 }
@@ -230,14 +274,15 @@ void lalr1::add_lookback( transition* reduce )
             assert( state != prev );
         }
         
-        // Add lookback from the final transition to the original one.
-        if ( final )
+        // Add lookback from the final transition to the nonterminal one.
+        if ( fsymbol )
         {
-            if ( ! final->lookback )
-            {
-                final->lookback = std::make_unique< lookback >();
-            }
-            final->lookback->lookback.push_back( reduce );
+            reducefrom_ptr rfrom = std::make_unique< reducefrom >();
+            rfrom->nonterminal = nonterm;
+            rfrom->finalsymbol = fsymbol;
+            nonterm->rfrom.push_back( rfrom.get() );
+            fsymbol->rgoto.push_back( rfrom.get() );
+            _automata->reducefrom.push_back( std::move( rfrom ) );
         }
     }
 }

@@ -62,20 +62,20 @@ void automata::print()
         }
         printf( "</table>>];\n" );
         
-        for ( const auto& transition : state->transitions )
+        for ( const auto& transition : state->next )
         {
-            if ( ! transition->symbol->is_terminal || transition->lookback )
+            if ( transition->rfrom.size() | transition->rgoto.size() )
             {
                 // Need to split this transition.
-                printf( "transplit%p [label=\"\", fixedsize=\"false\", width=0, height=0, shape=none];\n", transition.get() );
+                printf( "transplit%p [label=\"\", fixedsize=\"false\", width=0, height=0, shape=none];\n", transition );
                 printf
                 (
                     "state%p -> transplit%p [label=\"%s\" arrowhead=none];\n",
                     transition->prev,
-                    transition.get(),
+                    transition,
                     syntax->source->text( transition->symbol->name )
                 );
-                printf( "transplit%p -> state%p;\n", transition.get(), transition->next );
+                printf( "transplit%p -> state%p;\n", transition, transition->next );
             }
             else
             {
@@ -88,12 +88,9 @@ void automata::print()
                 );
             }
             
-            if ( transition->lookback )
+            for ( const auto& reducefrom : transition->rgoto )
             {
-                for ( auto lookback : transition->lookback->lookback )
-                {
-                    printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", transition.get(), lookback );
-                }
+                printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", transition, reducefrom->nonterminal );
             }
         }
     }

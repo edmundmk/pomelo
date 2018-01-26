@@ -89,6 +89,7 @@ struct nonterminal : public symbol
     std::string     type;
     std::vector< rule_ptr > rules;
     bool            defined;
+    bool            erasable;
 };
 
 struct rule

@@ -73,19 +73,29 @@ void parser::parse( const char* path )
         start->is_terminal  = false;
         start->type         = _syntax->start->type;
         start->defined      = true;
+        start->erasable     = false;
+        
+        terminal_ptr eof = std::make_unique< terminal >();
+        eof->name           = _syntax->source->new_token( 0, "$" );
+        eof->value          = -1;
+        eof->is_terminal    = true;
+        eof->precedence     = -1;
+        eof->associativity  = ASSOC_NONE;
         
         rule_ptr rule = std::make_unique< ::rule >();
         rule->nonterminal   = start.get();
         rule->lostart       = _syntax->locations.size();
-        rule->locount       = 2;
+        rule->locount       = 3;
         rule->precedence    = nullptr;
         rule->precetoken    = NULL_TOKEN;
         
         _syntax->locations.push_back( { rule.get(), _syntax->start, start->name, NULL_TOKEN } );
+        _syntax->locations.push_back( { rule.get(), eof.get(), eof->name, NULL_TOKEN } );
         _syntax->locations.push_back( { rule.get(), nullptr, NULL_TOKEN, NULL_TOKEN } );
         
         start->rules.push_back( std::move( rule ) );
         _syntax->start = start.get();
+        _syntax->terminals.emplace( eof->name, std::move( eof ) );
         _syntax->nonterminals.emplace( start->name, std::move( start ) );
     }
     else
@@ -136,7 +146,7 @@ void parser::parse( const char* path )
             }
         }
     );
-    int value = 1;
+    int value = 0;
     for ( symbol* sym : symbols )
     {
         sym->value = value++;
@@ -445,6 +455,7 @@ nonterminal* parser::declare_nonterminal( token token )
     usym->value         = -1;
     usym->is_terminal   = false;
     usym->defined       = false;
+    usym->erasable      = false;
     
     nonterminal* psym = usym.get();
     _syntax->nonterminals.emplace( token, std::move( usym ) );
