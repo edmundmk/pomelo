@@ -72,7 +72,14 @@ bool location_compare::operator () ( size_t a, size_t b ) const
 }
 
 
+/*
+    Compare terminals so lower values are first.
+*/
 
+bool terminal_compare::operator () ( terminal* a, terminal* b ) const
+{
+    return a->value < b->value;
+}
 
 
 /*
@@ -148,6 +155,20 @@ automata_ptr lalr1::construct()
         }
     }
     
+    // Calculate lookahead sets for reductions.
+    for ( const auto& state : _automata->states )
+    {
+        for ( size_t i = 0; i < state->closure->size; ++i )
+        {
+            size_t iloc = state->closure->locations[ i ];
+            const location& loc = _automata->syntax->locations[ iloc ];
+            if ( ! loc.symbol )
+            {
+                reduce_lookahead( state.get(), loc.rule );
+            }
+        }
+    }
+    
     // Return constructed automata.
     return _automata;
 }
@@ -203,8 +224,8 @@ void lalr1::add_transitions( state* pstate )
         const location& l = _automata->syntax->locations.at( iloc );
         symbol* nsym = l.symbol;
         
-        // If the next symbol is null or eof, the following locations all reduce.
-        if ( ! nsym || ! nsym->value )
+        // If the next symbol is null the following locations all reduce.
+        if ( ! nsym )
         {
             break;
         }
@@ -239,51 +260,6 @@ void lalr1::add_transitions( state* pstate )
         pstate->next.push_back( trans.get() );
         nstate->prev.push_back( trans.get() );
         _automata->transitions.push_back( std::move( trans ) );
-    }
-}
-
-
-void lalr1::add_reducefroms( transition* nonterm )
-{
-    // This transition is a nonterminal.
-    assert( ! nonterm->symbol->is_terminal );
-    nonterminal* nsym = (nonterminal*)nonterm->symbol;
-
-    // Follow each rule to find the reduction transition.
-    for ( const auto& rule : nsym->rules )
-    {
-        transition* fsymbol = nullptr;
-        state* state = nonterm->prev;
-        
-        for ( size_t i = 0; i < rule->locount - 1; ++i )
-        {
-            size_t iloc = rule->lostart + i;
-            const location& loc = _automata->syntax->locations[ iloc ];
-            
-            // Follow transition.
-            ::state* prev = state;
-            for ( const auto& transition : state->next )
-            {
-                if ( transition->symbol == loc.symbol )
-                {
-                    fsymbol = transition;
-                    state = transition->next;
-                    break;
-                }
-            }
-            assert( state != prev );
-        }
-        
-        // Add lookback from the final transition to the nonterminal one.
-        if ( fsymbol )
-        {
-            reducefrom_ptr rfrom = std::make_unique< reducefrom >();
-            rfrom->nonterminal = nonterm;
-            rfrom->finalsymbol = fsymbol;
-            nonterm->rfrom.push_back( rfrom.get() );
-            fsymbol->rgoto.push_back( rfrom.get() );
-            _automata->reducefrom.push_back( std::move( rfrom ) );
-        }
     }
 }
 
@@ -331,6 +307,7 @@ state* lalr1::close_state()
         _scratch_closure->locations,
         sizeof( size_t ) * _scratch_closure->size
     );
+    nstate->visited = 0;
     
     // Add to bookkeeping.
     state* pstate = nstate.get();
@@ -340,6 +317,145 @@ state* lalr1::close_state()
     return pstate;
 }
 
+
+void lalr1::add_reducefroms( transition* nonterm )
+{
+    // This transition is a nonterminal.
+    assert( ! nonterm->symbol->is_terminal );
+    nonterminal* nsym = (nonterminal*)nonterm->symbol;
+
+    // Follow each rule to find the reduction transition.
+    for ( const auto& rule : nsym->rules )
+    {
+        transition* fsymbol = nullptr;
+        state* state = nonterm->prev;
+        
+        for ( size_t i = 0; i < rule->locount - 1; ++i )
+        {
+            size_t iloc = rule->lostart + i;
+            const location& loc = _automata->syntax->locations[ iloc ];
+            
+            // Follow transition.
+            ::state* prev = state;
+            for ( const auto& transition : state->next )
+            {
+                if ( transition->symbol == loc.symbol )
+                {
+                    fsymbol = transition;
+                    state = transition->next;
+                    break;
+                }
+            }
+            assert( state != prev );
+        }
+        
+        // Add lookback from the final transition to the nonterminal one.
+        if ( fsymbol )
+        {
+            reducefrom_ptr rfrom = std::make_unique< reducefrom >();
+            rfrom->nonterminal = nonterm;
+            rfrom->finalsymbol = fsymbol;
+            rfrom->visited = 0;
+            nonterm->rfrom.push_back( rfrom.get() );
+            fsymbol->rgoto.push_back( rfrom.get() );
+            _automata->reducefrom.push_back( std::move( rfrom ) );
+        }
+    }
+}
+
+
+
+void lalr1::reduce_lookahead( state* state, rule* rule )
+{
+    _automata->visited += 1;
+    
+    // Find lookahead by finding transitions that shift the reduced symbol.
+    if ( rule->locount > 1 )
+    {
+        // If it's not an epsilon reduction, then we need to follow the links
+        // back from the final transitions of the rule.
+        for ( const auto& transition : state->prev )
+        {
+            for ( const auto& reducefrom : transition->rgoto )
+            {
+                if ( reducefrom->nonterminal->symbol == rule->nonterminal )
+                {
+                    assert( reducefrom->finalsymbol == transition );
+                    follow_lookahead( reducefrom );
+                }
+            }
+        }
+    }
+    else
+    {
+        // Otherwise the transition that shifts the reduced nonterminal is one
+        // of the next transitions from this state.
+        for ( const auto& transition : state->next )
+        {
+            if ( transition->symbol == rule->nonterminal )
+            {
+                direct_lookahead( transition->next );
+                break;
+            }
+        }
+    }
+    
+    // Convert to reduction lookahead set.
+    reduction_ptr reduction = std::make_unique< ::reduction >();
+    reduction->rule = rule;
+    for ( const auto& terminal : _lookahead )
+    {
+        reduction->lookahead.push_back( terminal );
+    }
+    _lookahead.clear();
+    state->reductions.push_back( std::move( reduction ) );
+}
+
+
+void lalr1::follow_lookahead( reducefrom* reducefrom )
+{
+    // Cycles in these links occur in an ambiguous grammar.
+    if ( reducefrom->visited == _automata->visited )
+    {
+        return;
+    }
+    
+    // We need to follow any other links from here to cover the cases where
+    // a final symbol is itself a nonterminal.
+    reducefrom->visited = _automata->visited;
+    direct_lookahead( reducefrom->nonterminal->next );
+    for ( const auto& nestfinal : reducefrom->nonterminal->rgoto )
+    {
+        assert( nestfinal->finalsymbol == reducefrom->nonterminal );
+        follow_lookahead( nestfinal );
+    }
+}
+
+
+void lalr1::direct_lookahead( state* state )
+{
+    // Don't visit the same state twice.
+    if ( state->visited == _automata->visited )
+    {
+        return;
+    }
+
+    // Direct lookahead from a state is all terminal symbols on a transition
+    // out of a state, plus the direct lookahead from any successor state where
+    // the transition symbol is eraseable.
+    state->visited = _automata->visited;
+    for ( const auto& transition : state->next )
+    {
+        if ( transition->symbol->is_terminal )
+        {
+            _lookahead.insert( (terminal*)transition->symbol );
+        }
+        else if ( ( (nonterminal*)transition->symbol )->erasable )
+        {
+            direct_lookahead( transition->next );
+        }
+    }
+}
 
 
 

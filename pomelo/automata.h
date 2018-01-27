@@ -23,6 +23,7 @@ struct state;
 struct automata;
 struct transition;
 struct reducefrom;
+struct reduction;
 
 
 typedef std::unique_ptr< closure, closure_deleter > closure_ptr;
@@ -30,7 +31,7 @@ typedef std::shared_ptr< automata > automata_ptr;
 typedef std::unique_ptr< state > state_ptr;
 typedef std::unique_ptr< transition > transition_ptr;
 typedef std::unique_ptr< reducefrom > reducefrom_ptr;
-
+typedef std::unique_ptr< reduction > reduction_ptr;
 
 
 
@@ -68,13 +69,16 @@ struct automata
     std::vector< state_ptr > states;
     std::vector< transition_ptr > transitions;
     std::vector< reducefrom_ptr > reducefrom;
+    uintptr_t visited;
 };
 
 struct state
 {
     closure_ptr closure;
+    std::vector< reduction_ptr > reductions;
     std::vector< transition* > prev;
     std::vector< transition* > next;
+    uintptr_t visited;
 };
 
 struct transition
@@ -98,6 +102,18 @@ struct reducefrom
 {
     transition* nonterminal; // transition shifting nonterminal symbol.
     transition* finalsymbol; // final transition before accepting nonterminal.
+    uintptr_t visited;
+};
+
+
+/*
+    A reduction action in a state.
+*/
+
+struct reduction
+{
+    rule* rule;
+    std::vector< terminal* > lookahead;
 };
 
 

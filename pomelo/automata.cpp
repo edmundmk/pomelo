@@ -28,6 +28,7 @@ void closure_deleter::operator () ( closure* p ) const
 
 automata::automata( syntax_ptr syntax )
     :   syntax( syntax )
+    ,   visited( 0 )
 {
 }
 
@@ -57,6 +58,18 @@ void automata::print()
                     printf( " ·" );
                 }
                 printf( " %s", loc.stoken ? syntax->source->text( loc.stoken ) : "." );
+            }
+            if ( ! loc.symbol )
+            {
+                for ( const auto& reduction : state->reductions )
+                {
+                    printf( " [" );
+                    for ( const auto& terminal : reduction->lookahead )
+                    {
+                        printf( " %s", syntax->source->text( terminal->name ) );
+                    }
+                    printf( " ]" );
+                }
             }
             printf( "</td></tr>\n" );
         }

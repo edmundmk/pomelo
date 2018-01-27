@@ -65,6 +65,20 @@ private:
 };
 
 
+/*
+    We sort symbols by index.
+*/
+
+class terminal_compare
+{
+public:
+
+    bool operator () ( terminal* a, terminal* b ) const;
+
+};
+
+
+
 
 /*
     Build a LALR(1) DFA from the rules in the grammar.
@@ -85,9 +99,13 @@ private:
     bool    erasable_rule( rule* rule );
     void    add_location( size_t locindex );
     void    add_transitions( state* pstate );
-    void    add_reducefroms( transition* nonterm );
     void    alloc_scratch( size_t capacity );
     state*  close_state();
+    void    add_reducefroms( transition* nonterm );
+    void    reduce_lookahead( state* state, rule* rule );
+    void    follow_lookahead( reducefrom* reducefrom );
+    void    direct_lookahead( state* state );
+    
 
     errors_ptr _errors;
     automata_ptr _automata;
@@ -96,6 +114,7 @@ private:
     std::deque< state* > _pending;
     size_t _scratch_capacity;
     closure_ptr _scratch_closure;
+    std::set< terminal*, terminal_compare > _lookahead;
 
 };
 
