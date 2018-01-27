@@ -103,7 +103,7 @@ private:
     state*  close_state();
     void    add_reducefroms( transition* nonterm );
     void    reduce_lookahead( state* state, rule* rule );
-    void    follow_lookahead( reducefrom* reducefrom );
+    void    follow_lookahead( transition* transition );
     void    direct_lookahead( state* state );
     
 

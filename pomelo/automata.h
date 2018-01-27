@@ -88,6 +88,7 @@ struct transition
     symbol* symbol;
     std::vector< reducefrom* > rfrom; // links to reachable final transitions.
     std::vector< reducefrom* > rgoto; // link from final transition to nonterminal.
+    uintptr_t visited;
 };
 
 
@@ -102,7 +103,6 @@ struct reducefrom
 {
     transition* nonterminal; // transition shifting nonterminal symbol.
     transition* finalsymbol; // final transition before accepting nonterminal.
-    uintptr_t visited;
 };
 
 

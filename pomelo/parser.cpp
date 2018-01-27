@@ -505,11 +505,10 @@ void parser::next()
                 bool was_asterisk = false;
                 while ( ! was_asterisk || c != '/' )
                 {
+                    was_asterisk = ( c == '*' );
                     c = fgetc( _file );
                     _sloc += 1;
                     
-                    was_asterisk = ( c == '*' );
-
                     if ( c == '\r' )
                     {
                         c = fgetc( _file );

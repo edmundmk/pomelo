@@ -257,6 +257,7 @@ void lalr1::add_transitions( state* pstate )
         trans->prev = pstate;
         trans->next = nstate;
         trans->symbol = nsym;
+        trans->visited = 0;
         pstate->next.push_back( trans.get() );
         nstate->prev.push_back( trans.get() );
         _automata->transitions.push_back( std::move( trans ) );
@@ -355,7 +356,6 @@ void lalr1::add_reducefroms( transition* nonterm )
             reducefrom_ptr rfrom = std::make_unique< reducefrom >();
             rfrom->nonterminal = nonterm;
             rfrom->finalsymbol = fsymbol;
-            rfrom->visited = 0;
             nonterm->rfrom.push_back( rfrom.get() );
             fsymbol->rgoto.push_back( rfrom.get() );
             _automata->reducefrom.push_back( std::move( rfrom ) );
@@ -381,7 +381,7 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
                 if ( reducefrom->nonterminal->symbol == rule->nonterminal )
                 {
                     assert( reducefrom->finalsymbol == transition );
-                    follow_lookahead( reducefrom );
+                    follow_lookahead( reducefrom->nonterminal );
                 }
             }
         }
@@ -394,7 +394,7 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
         {
             if ( transition->symbol == rule->nonterminal )
             {
-                direct_lookahead( transition->next );
+                follow_lookahead( transition );
                 break;
             }
         }
@@ -412,22 +412,22 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
 }
 
 
-void lalr1::follow_lookahead( reducefrom* reducefrom )
+void lalr1::follow_lookahead( transition* transition )
 {
     // Cycles in these links occur in an ambiguous grammar.
-    if ( reducefrom->visited == _automata->visited )
+    if ( transition->visited == _automata->visited )
     {
         return;
     }
     
     // We need to follow any other links from here to cover the cases where
     // a final symbol is itself a nonterminal.
-    reducefrom->visited = _automata->visited;
-    direct_lookahead( reducefrom->nonterminal->next );
-    for ( const auto& nestfinal : reducefrom->nonterminal->rgoto )
+    transition->visited = _automata->visited;
+    direct_lookahead( transition->next );
+    for ( const auto& nestfinal : transition->rgoto )
     {
-        assert( nestfinal->finalsymbol == reducefrom->nonterminal );
-        follow_lookahead( nestfinal );
+        assert( nestfinal->finalsymbol == transition );
+        follow_lookahead( nestfinal->nonterminal );
     }
 }
 
