@@ -73,6 +73,8 @@ struct syntax
 
 struct symbol
 {
+    symbol( token name, bool is_terminal );
+
     token           name;
     int             value           : ( sizeof( int ) * CHAR_BIT ) - 1;
     int             is_terminal     : 1;
@@ -80,12 +82,16 @@ struct symbol
 
 struct terminal : public symbol
 {
+    explicit terminal( token name );
+
     int             precedence      : ( sizeof( int ) * CHAR_BIT ) - 2;
     int             associativity   : 2;
 };
 
 struct nonterminal : public symbol
 {
+    explicit nonterminal( token name );
+
     std::string     type;
     std::vector< rule_ptr > rules;
     bool            defined;
@@ -94,6 +100,8 @@ struct nonterminal : public symbol
 
 struct rule
 {
+    explicit rule( nonterminal* nonterminal );
+
     nonterminal*    nonterminal;
     size_t          lostart;
     size_t          locount;

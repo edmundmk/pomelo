@@ -67,27 +67,16 @@ void parser::parse( const char* path )
     if ( _syntax->start )
     {
         // Start symbol is special.
-        nonterminal_ptr start = std::make_unique< nonterminal >();
-        start->name         = _syntax->source->new_token( 0, "@start" );
-        start->value        = -1;
-        start->is_terminal  = false;
+        token start_token = _syntax->source->new_token( 0, "@start" );
+        nonterminal_ptr start = std::make_unique< nonterminal >( start_token );
         start->type         = _syntax->start->type;
-        start->defined      = true;
-        start->erasable     = false;
         
-        terminal_ptr eof = std::make_unique< terminal >();
-        eof->name           = _syntax->source->new_token( 0, "$" );
-        eof->value          = -1;
-        eof->is_terminal    = true;
-        eof->precedence     = -1;
-        eof->associativity  = ASSOC_NONE;
+        token eof_token = _syntax->source->new_token( 0, "$" );
+        terminal_ptr eof = std::make_unique< terminal >( eof_token );
         
-        rule_ptr rule = std::make_unique< ::rule >();
-        rule->nonterminal   = start.get();
+        rule_ptr rule = std::make_unique< ::rule >( start.get() );
         rule->lostart       = _syntax->locations.size();
         rule->locount       = 3;
-        rule->precedence    = nullptr;
-        rule->precetoken    = NULL_TOKEN;
         
         _syntax->locations.push_back( { rule.get(), _syntax->start, start->name, NULL_TOKEN } );
         _syntax->locations.push_back( { rule.get(), eof.get(), eof->name, NULL_TOKEN } );
@@ -307,12 +296,9 @@ void parser::parse_nonterminal()
 
 void parser::parse_rule( nonterminal* nonterminal )
 {
-    rule_ptr rule = std::make_unique< ::rule >();
-    rule->nonterminal = nonterminal;
+    rule_ptr rule = std::make_unique< ::rule >( nonterminal );
     rule->lostart = _syntax->locations.size();
     rule->locount = 0;
-    rule->precedence = nullptr;
-    rule->precetoken = NULL_TOKEN;
 
     while ( true )
     {
@@ -430,13 +416,7 @@ terminal* parser::declare_terminal( token token )
         return i->second.get();
     }
     
-    terminal_ptr usym = std::make_unique< terminal >();
-    usym->name          = token;
-    usym->value         = -1;
-    usym->is_terminal   = true;
-    usym->precedence    = -1;
-    usym->associativity = ASSOC_NONE;
-    
+    terminal_ptr usym = std::make_unique< terminal >( token );
     terminal* psym = usym.get();
     _syntax->terminals.emplace( token, std::move( usym ) );
     return psym;
@@ -450,13 +430,7 @@ nonterminal* parser::declare_nonterminal( token token )
         return i->second.get();
     }
     
-    nonterminal_ptr usym = std::make_unique< nonterminal >();
-    usym->name          = token;
-    usym->value         = -1;
-    usym->is_terminal   = false;
-    usym->defined       = false;
-    usym->erasable      = false;
-    
+    nonterminal_ptr usym = std::make_unique< nonterminal >( token );
     nonterminal* psym = usym.get();
     _syntax->nonterminals.emplace( token, std::move( usym ) );
     return psym;

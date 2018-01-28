@@ -63,9 +63,11 @@ struct automata
     explicit automata( syntax_ptr syntax );
     ~automata();
 
-    void print();
+    void print( bool rgoto );
 
     syntax_ptr syntax;
+    state* start;
+    state* accept;
     std::vector< state_ptr > states;
     std::vector< transition_ptr > transitions;
     std::vector< reducefrom_ptr > reducefrom;
@@ -74,15 +76,21 @@ struct automata
 
 struct state
 {
+    explicit state( closure_ptr&& closure );
+
     closure_ptr closure;
     std::vector< reduction_ptr > reductions;
     std::vector< transition* > prev;
     std::vector< transition* > next;
     uintptr_t visited;
+    int start_distance;
+    int accept_distance;
 };
 
 struct transition
 {
+    transition( state* prev, state* next, symbol* nsym );
+
     state* prev;
     state* next;
     symbol* symbol;
@@ -101,6 +109,8 @@ struct transition
 
 struct reducefrom
 {
+    reducefrom( transition* nonterminal, transition* finalsymbol );
+
     transition* nonterminal; // transition shifting nonterminal symbol.
     transition* finalsymbol; // final transition before accepting nonterminal.
 };
@@ -112,6 +122,8 @@ struct reducefrom
 
 struct reduction
 {
+    explicit reduction( rule* rule );
+
     rule* rule;
     std::vector< terminal* > lookahead;
 };

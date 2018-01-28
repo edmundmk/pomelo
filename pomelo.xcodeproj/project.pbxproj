@@ -14,6 +14,8 @@
 		DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EB1FDF28A000F6AAF8 /* token.cpp */; };
 		DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EF1FDF310E00F6AAF8 /* parser.cpp */; };
 		DB6564F71FDF3E9D00F6AAF8 /* errors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */; };
+		DBDC9D72201DE26D005153CE /* conflicts.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D70201DE26D005153CE /* conflicts.cpp */; };
+		DBDC9D75201DE68D005153CE /* options.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D73201DE68D005153CE /* options.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,6 +46,10 @@
 		DB6564F01FDF310E00F6AAF8 /* parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = parser.h; sourceTree = "<group>"; };
 		DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = errors.cpp; sourceTree = "<group>"; };
 		DB6564F61FDF3E9D00F6AAF8 /* errors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = errors.h; sourceTree = "<group>"; };
+		DBDC9D70201DE26D005153CE /* conflicts.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = conflicts.cpp; sourceTree = "<group>"; };
+		DBDC9D71201DE26D005153CE /* conflicts.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = conflicts.h; sourceTree = "<group>"; };
+		DBDC9D73201DE68D005153CE /* options.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = options.cpp; sourceTree = "<group>"; };
+		DBDC9D74201DE68D005153CE /* options.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = options.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,11 +85,15 @@
 			children = (
 				DB1019921FE6DFCA00AD9E26 /* automata.cpp */,
 				DB1019931FE6DFCA00AD9E26 /* automata.h */,
+				DBDC9D70201DE26D005153CE /* conflicts.cpp */,
+				DBDC9D71201DE26D005153CE /* conflicts.h */,
 				DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */,
 				DB6564F61FDF3E9D00F6AAF8 /* errors.h */,
 				DB28F5D41FE533D80069E8D7 /* lalr1.cpp */,
 				DB28F5D51FE533D80069E8D7 /* lalr1.h */,
 				DB3070D91FDCA6A000AACBDC /* main.cpp */,
+				DBDC9D73201DE68D005153CE /* options.cpp */,
+				DBDC9D74201DE68D005153CE /* options.h */,
 				DB6564EF1FDF310E00F6AAF8 /* parser.cpp */,
 				DB6564F01FDF310E00F6AAF8 /* parser.h */,
 				DB6564E81FDF26E000F6AAF8 /* syntax.cpp */,
@@ -153,7 +163,9 @@
 			files = (
 				DB1019941FE6DFCA00AD9E26 /* automata.cpp in Sources */,
 				DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */,
+				DBDC9D75201DE68D005153CE /* options.cpp in Sources */,
 				DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */,
+				DBDC9D72201DE26D005153CE /* conflicts.cpp in Sources */,
 				DB28F5D61FE533D80069E8D7 /* lalr1.cpp in Sources */,
 				DB6564EA1FDF26E000F6AAF8 /* syntax.cpp in Sources */,
 				DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */,

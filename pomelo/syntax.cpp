@@ -20,7 +20,6 @@ syntax::~syntax()
 }
 
 
-
 void syntax::print()
 {
     
@@ -94,4 +93,35 @@ void syntax::print()
 }
 
 
+symbol::symbol( token name, bool is_terminal )
+    :   name( name )
+    ,   value( -1 )
+    ,   is_terminal( is_terminal )
+{
+}
 
+
+terminal::terminal( token name )
+    :   symbol( name, true )
+    ,   precedence( -1 )
+    ,   associativity( ASSOC_NONE )
+{
+}
+
+
+nonterminal::nonterminal( token name )
+    :   symbol( name, false )
+    ,   defined( false )
+    ,   erasable( false )
+{
+}
+
+
+rule::rule( ::nonterminal* nonterminal )
+    :   nonterminal( nonterminal )
+    ,   lostart( 0 )
+    ,   locount( 0 )
+    ,   precedence( nullptr )
+    ,   precetoken( NULL_TOKEN )
+{
+}

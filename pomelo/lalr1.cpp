@@ -253,11 +253,7 @@ void lalr1::add_transitions( state* pstate )
         
         // Close state.
         state* nstate = close_state();
-        transition_ptr trans = std::make_unique< transition >();
-        trans->prev = pstate;
-        trans->next = nstate;
-        trans->symbol = nsym;
-        trans->visited = 0;
+        transition_ptr trans = std::make_unique< transition >( pstate, nstate, nsym );
         pstate->next.push_back( trans.get() );
         nstate->prev.push_back( trans.get() );
         _automata->transitions.push_back( std::move( trans ) );
@@ -297,21 +293,35 @@ state* lalr1::close_state()
     }
     
     // Otherwise make new state.
-    state_ptr nstate = std::make_unique< state >();
     size_t size = sizeof( closure ) + sizeof( size_t ) * _scratch_closure->size;
-    nstate->closure = closure_ptr( (closure*)malloc( size ) );
-    nstate->closure->hash = _scratch_closure->hash;
-    nstate->closure->size = _scratch_closure->size;
+    closure_ptr closure = closure_ptr( (::closure*)malloc( size ) );
+    closure->hash = _scratch_closure->hash;
+    closure->size = _scratch_closure->size;
     memcpy
     (
-        nstate->closure->locations,
+        closure->locations,
         _scratch_closure->locations,
         sizeof( size_t ) * _scratch_closure->size
     );
-    nstate->visited = 0;
+    state_ptr nstate = std::make_unique< state >( std::move( closure ) );
     
     // Add to bookkeeping.
     state* pstate = nstate.get();
+
+    if ( _automata->states.empty() )
+    {
+        assert( ! _automata->start );
+        _automata->start = pstate;
+    }
+
+    size_t iloc = pstate->closure->locations[ 0 ];
+    const auto& loc = _automata->syntax->locations[ iloc ];
+    if ( loc.rule->nonterminal == _automata->syntax->start && ! loc.symbol )
+    {
+        assert( ! _automata->accept );
+        _automata->accept = pstate;
+    }
+
     _automata->states.push_back( std::move( nstate ) );
     _states.emplace( closure_key( pstate->closure.get() ), pstate );
     _pending.push_back( pstate );
@@ -353,9 +363,7 @@ void lalr1::add_reducefroms( transition* nonterm )
         // Add lookback from the final transition to the nonterminal one.
         if ( fsymbol )
         {
-            reducefrom_ptr rfrom = std::make_unique< reducefrom >();
-            rfrom->nonterminal = nonterm;
-            rfrom->finalsymbol = fsymbol;
+            reducefrom_ptr rfrom = std::make_unique< reducefrom >( nonterm, fsymbol );
             nonterm->rfrom.push_back( rfrom.get() );
             fsymbol->rgoto.push_back( rfrom.get() );
             _automata->reducefrom.push_back( std::move( rfrom ) );
@@ -401,8 +409,7 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
     }
     
     // Convert to reduction lookahead set.
-    reduction_ptr reduction = std::make_unique< ::reduction >();
-    reduction->rule = rule;
+    reduction_ptr reduction = std::make_unique< ::reduction >( rule );
     for ( const auto& terminal : _lookahead )
     {
         reduction->lookahead.push_back( terminal );
