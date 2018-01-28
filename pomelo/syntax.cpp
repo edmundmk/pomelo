@@ -25,8 +25,9 @@ void syntax::print()
     
     printf( "%%include {%s}\n", include.text.c_str() );
     printf( "%%class_name {%s}\n", class_name.text.c_str() );
-    printf( "%%token_prefix {%s}\n", token_prefix.text.c_str() );
     printf( "%%token_type {%s}\n", token_type.text.c_str() );
+    printf( "%%token_prefix {%s}\n", token_prefix.text.c_str() );
+    printf( "%%nterm_prefix {%s}\n", nterm_prefix.text.c_str() );
     
     for ( const auto& entry : terminals )
     {

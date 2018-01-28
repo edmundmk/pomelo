@@ -19,8 +19,10 @@
 struct symbol;
 struct closure;
 struct closure_deleter;
-struct state;
 struct automata;
+struct conflict;
+struct action;
+struct state;
 struct transition;
 struct reducefrom;
 struct reduction;
@@ -29,6 +31,7 @@ struct reduction;
 typedef std::unique_ptr< closure, closure_deleter > closure_ptr;
 typedef std::shared_ptr< automata > automata_ptr;
 typedef std::unique_ptr< state > state_ptr;
+typedef std::unique_ptr< conflict > conflict_ptr;
 typedef std::unique_ptr< transition > transition_ptr;
 typedef std::unique_ptr< reducefrom > reducefrom_ptr;
 typedef std::unique_ptr< reduction > reduction_ptr;
@@ -71,7 +74,32 @@ struct automata
     std::vector< state_ptr > states;
     std::vector< transition_ptr > transitions;
     std::vector< reducefrom_ptr > reducefrom;
+    std::vector< reduction_ptr > reductions;
+    std::vector< conflict_ptr > conflicts;
     uintptr_t visited;
+};
+
+struct conflict
+{
+    explicit conflict( terminal* terminal );
+
+    terminal* terminal;
+    transition* shift;
+    std::vector< reduction* > reduce;
+    bool reported;
+};
+
+enum action_kind { ACTION_ERROR, ACTION_SHIFT, ACTION_REDUCE, ACTION_CONFLICT };
+
+struct action
+{
+    action_kind kind;
+    union
+    {
+        transition* shift;
+        reduction*  reduce;
+        conflict*   conflict;
+    };
 };
 
 struct state
@@ -79,12 +107,14 @@ struct state
     explicit state( closure_ptr&& closure );
 
     closure_ptr closure;
-    std::vector< reduction_ptr > reductions;
+    std::vector< action > actions;
+    std::vector< reduction* > reductions;
     std::vector< transition* > prev;
     std::vector< transition* > next;
     uintptr_t visited;
     int start_distance;
     int accept_distance;
+    bool has_conflict;
 };
 
 struct transition
@@ -109,8 +139,9 @@ struct transition
 
 struct reducefrom
 {
-    reducefrom( transition* nonterminal, transition* finalsymbol );
+    reducefrom( rule* rule, transition* nonterminal, transition* finalsymbol );
 
+    rule* rule;
     transition* nonterminal; // transition shifting nonterminal symbol.
     transition* finalsymbol; // final transition before accepting nonterminal.
 };
@@ -122,9 +153,10 @@ struct reducefrom
 
 struct reduction
 {
-    explicit reduction( rule* rule );
+    reduction( rule* rule, reducefrom* rfrom );
 
     rule* rule;
+    reducefrom* rfrom;
     std::vector< terminal* > lookahead;
 };
 

@@ -164,13 +164,17 @@ void parser::parse_directive()
     {
         directive = &_syntax->class_name;
     }
+    else if ( strcmp( text, "token_type" ) == 0 )
+    {
+        directive = &_syntax->token_type;
+    }
     else if ( strcmp( text, "token_prefix" ) == 0 )
     {
         directive = &_syntax->token_prefix;
     }
-    else if ( strcmp( text, "token_type" ) == 0 )
+    else if ( strcmp( text, "nterm_prefix" ) == 0 )
     {
-        directive = &_syntax->token_type;
+        directive = &_syntax->nterm_prefix;
     }
     else if ( strcmp( text, "left" ) == 0 )
     {

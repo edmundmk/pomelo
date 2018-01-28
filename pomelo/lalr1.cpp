@@ -348,7 +348,7 @@ void lalr1::add_reducefroms( transition* nonterm )
             
             // Follow transition.
             ::state* prev = state;
-            for ( const auto& transition : state->next )
+            for ( transition* transition : state->next )
             {
                 if ( transition->symbol == loc.symbol )
                 {
@@ -363,7 +363,7 @@ void lalr1::add_reducefroms( transition* nonterm )
         // Add lookback from the final transition to the nonterminal one.
         if ( fsymbol )
         {
-            reducefrom_ptr rfrom = std::make_unique< reducefrom >( nonterm, fsymbol );
+            reducefrom_ptr rfrom = std::make_unique< reducefrom >( rule.get(), nonterm, fsymbol );
             nonterm->rfrom.push_back( rfrom.get() );
             fsymbol->rgoto.push_back( rfrom.get() );
             _automata->reducefrom.push_back( std::move( rfrom ) );
@@ -378,18 +378,21 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
     _automata->visited += 1;
     
     // Find lookahead by finding transitions that shift the reduced symbol.
+    reducefrom* rfrom = nullptr;
     if ( rule->locount > 1 )
     {
         // If it's not an epsilon reduction, then we need to follow the links
         // back from the final transitions of the rule.
-        for ( const auto& transition : state->prev )
+        for ( transition* transition : state->prev )
         {
-            for ( const auto& reducefrom : transition->rgoto )
+            for ( reducefrom* reducefrom : transition->rgoto )
             {
-                if ( reducefrom->nonterminal->symbol == rule->nonterminal )
+                if ( reducefrom->rule == rule )
                 {
                     assert( reducefrom->finalsymbol == transition );
                     follow_lookahead( reducefrom->nonterminal );
+                    rfrom = reducefrom;
+                    break;
                 }
             }
         }
@@ -398,7 +401,7 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
     {
         // Otherwise the transition that shifts the reduced nonterminal is one
         // of the next transitions from this state.
-        for ( const auto& transition : state->next )
+        for ( transition* transition : state->next )
         {
             if ( transition->symbol == rule->nonterminal )
             {
@@ -409,13 +412,14 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
     }
     
     // Convert to reduction lookahead set.
-    reduction_ptr reduction = std::make_unique< ::reduction >( rule );
+    reduction_ptr reduction = std::make_unique< ::reduction >( rule, rfrom );
     for ( const auto& terminal : _lookahead )
     {
         reduction->lookahead.push_back( terminal );
     }
     _lookahead.clear();
-    state->reductions.push_back( std::move( reduction ) );
+    state->reductions.push_back( reduction.get() );
+    _automata->reductions.push_back( std::move( reduction ) );
 }
 
 
@@ -451,7 +455,7 @@ void lalr1::direct_lookahead( state* state )
     // out of a state, plus the direct lookahead from any successor state where
     // the transition symbol is eraseable.
     state->visited = _automata->visited;
-    for ( const auto& transition : state->next )
+    for ( transition* transition : state->next )
     {
         if ( transition->symbol->is_terminal )
         {

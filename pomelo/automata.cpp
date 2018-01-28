@@ -78,7 +78,7 @@ void automata::print( bool rgoto )
         }
         printf( "</table>>];\n" );
         
-        for ( const auto& transition : state->next )
+        for ( transition* transition : state->next )
         {
             if ( rgoto && ( transition->rfrom.size() | transition->rgoto.size() ) )
             {
@@ -106,7 +106,7 @@ void automata::print( bool rgoto )
             
             if ( rgoto )
             {
-                for ( const auto& reducefrom : transition->rgoto )
+                for ( ::reducefrom* reducefrom : transition->rgoto )
                 {
                     printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", transition, reducefrom->nonterminal );
                 }
@@ -117,11 +117,20 @@ void automata::print( bool rgoto )
 }
 
 
+conflict::conflict( ::terminal* terminal )
+    :   terminal( terminal )
+    ,   shift( nullptr )
+    ,   reported( false )
+{
+}
+
+
 state::state( closure_ptr&& closure )
     :   closure( std::move( closure ) )
     ,   visited( 0 )
-    ,   start_distance( 0 )
-    ,   accept_distance( 0 )
+    ,   start_distance( INT_MAX )
+    ,   accept_distance( INT_MAX )
+    ,   has_conflict( false )
 {
 }
 
@@ -135,15 +144,17 @@ transition::transition( state* prev, state* next, ::symbol* nsym )
 }
 
 
-reducefrom::reducefrom( transition* nonterminal, transition* finalsymbol )
-    :   nonterminal( nonterminal )
+reducefrom::reducefrom( ::rule* rule, transition* nonterminal, transition* finalsymbol )
+    :   rule( rule )
+    ,   nonterminal( nonterminal )
     ,   finalsymbol( finalsymbol )
 {
 }
 
 
-reduction::reduction( ::rule* rule )
+reduction::reduction( ::rule* rule, reducefrom* rfrom )
     :   rule( rule )
+    ,   rfrom( rfrom )
 {
 }
 

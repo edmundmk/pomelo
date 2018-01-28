@@ -5,8 +5,9 @@
 
 
 %class_name { ulang_parser }
-%token_prefix { TOKEN_ }
 %token_type { type }
+%token_prefix { TOKEN_ }
+%nterm_prefix { NTERM_ }
 
 
 
