@@ -346,7 +346,7 @@ void parser::parse_rule( nonterminal* nonterminal )
         }
         else if ( _lexed == '.' )
         {
-            location l = { rule.get(), nullptr, NULL_TOKEN, NULL_TOKEN };
+            location l = { rule.get(), nullptr, _token, NULL_TOKEN };
             _syntax->locations.push_back( l );
             rule->locount += 1;
 
@@ -597,6 +597,12 @@ void parser::next()
             
             _lexed = TOKEN;
             _token = _syntax->source->new_token( _tloc, _block );
+            return;
+        }
+        else if ( c == '.' )
+        {
+            _lexed = '.';
+            _token = _syntax->source->new_token( _tloc, "." );
             return;
         }
         else

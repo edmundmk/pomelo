@@ -31,12 +31,66 @@ automata::automata( syntax_ptr syntax )
     ,   start( nullptr )
     ,   accept( nullptr )
     ,   visited( 0 )
+    ,   has_distances( false )
 {
 }
 
 automata::~automata()
 {
 }
+
+
+static void traverse_start( state* s, int distance )
+{
+    if ( s->start_distance <= distance )
+    {
+        return;
+    }
+    
+    s->start_distance = distance;
+    distance += 1;
+    for ( transition* transition : s->next )
+    {
+        traverse_start( transition->next, distance );
+    }
+}
+
+
+static void traverse_accept( state* s, int distance )
+{
+    if ( s->accept_distance <= distance )
+    {
+        return;
+    }
+    
+    s->accept_distance = distance;
+    distance += 1;
+    for ( transition* transition : s->prev )
+    {
+        traverse_accept( transition->prev, distance );
+        for ( const auto& rfrom : transition->rfrom )
+        {
+            traverse_accept( rfrom->finalsymbol->next, distance );
+        }
+    }
+}
+
+
+void automata::ensure_distances()
+{
+    if ( has_distances )
+    {
+        return;
+    }
+    
+    // Traverse DFA from start state to work out distance from the start.
+    traverse_start( start, 0 );
+
+    // Traverse DFA from accept state (and following rfrom links) to work
+    // out distance to the accept state.
+    traverse_accept( accept, 0 );
+}
+
 
 void automata::print( bool rgoto )
 {

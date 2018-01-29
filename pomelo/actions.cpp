@@ -288,7 +288,6 @@ void context::print( const value* tail, const value* head, std::string* out_prin
 actions::actions( errors_ptr errors, automata_ptr automata )
     :   _errors( errors )
     ,   _automata( automata )
-    ,   _calculated_distances( false )
 {
 }
 
@@ -305,6 +304,8 @@ void actions::analyze()
     {
         build_actions( state.get() );
     }
+    
+    // Traverse automata using actions and check if any rules are 
 }
 
 void actions::report_conflicts()
@@ -370,43 +371,6 @@ void actions::print()
         }
     }
 }
-
-
-
-void actions::traverse_start( state* s, int distance )
-{
-    if ( s->start_distance <= distance )
-    {
-        return;
-    }
-    
-    s->start_distance = distance;
-    distance += 1;
-    for ( transition* transition : s->next )
-    {
-        traverse_start( transition->next, distance );
-    }
-}
-
-void actions::traverse_accept( state* s, int distance )
-{
-    if ( s->accept_distance <= distance )
-    {
-        return;
-    }
-    
-    s->accept_distance = distance;
-    distance += 1;
-    for ( transition* transition : s->prev )
-    {
-        traverse_accept( transition->prev, distance );
-        for ( const auto& rfrom : transition->rfrom )
-        {
-            traverse_accept( rfrom->finalsymbol->next, distance );
-        }
-    }
-}
-
 
 
 void actions::build_actions( state* s )
@@ -591,17 +555,7 @@ void actions::build_actions( state* s )
 void actions::report_conflicts( state* s )
 {
     // Detailed reporting of conflicts requires pathfinding through the graph.
-    if ( ! _calculated_distances )
-    {
-        _calculated_distances = true;
-    
-        // Traverse DFA from start state to work out distance from the start.
-        traverse_start( _automata->start, 0 );
-        
-        // Traverse DFA from accept state (and following rfrom links) to work
-        // out distance to the accept state.
-        traverse_accept( _automata->accept, 0 );
-    }
+    _automata->ensure_distances();
     
     // Group conflicts by whether or not they shift, and by reduction sets.
     for ( size_t i = 0; i < s->actions.size(); )

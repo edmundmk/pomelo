@@ -124,5 +124,6 @@ rule::rule( ::nonterminal* nonterminal )
     ,   locount( 0 )
     ,   precedence( nullptr )
     ,   precetoken( NULL_TOKEN )
+    ,   reachable( false )
 {
 }

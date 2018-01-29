@@ -109,6 +109,7 @@ struct rule
     terminal*       precedence;
     token           precetoken;
     std::string     action;
+    bool            reachable;
 };
 
 

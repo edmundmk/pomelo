@@ -113,6 +113,43 @@ private:
 
 
 
+/*
+    The actual parse tables.
+*/
+
+struct action_conflict
+{
+    std::vector< int > actions;
+};
+
+struct action_table
+{
+    int max_shift;      // 0 <= n < max_shift -> shift terminal n
+    int max_reduce;     // max_shift <= n < max_reduce -> reduce rule n - max_shift
+    int max_conflict;   // max_reduce <= n < max_conflict -> conflict n
+    int error;          // n == error -> error
+
+    int terminal_count;
+    int state_count;
+
+    std::vector< terminal* > terminals;
+    std::vector< rule* > rules;
+    std::vector< action_conflict > conflicts;
+    std::vector< int > actions;
+
+    int& lookup( int state, int terminal );
+};
+
+struct goto_table
+{
+    int nonterminal_count;
+    int state_count;
+    
+    std::vector< int > gotos;
+    
+    int& lookup( int state, int nonterminal );
+};
+
 
 
 /*
@@ -133,10 +170,6 @@ public:
 
 private:
 
-
-    void traverse_start( state* s, int distance );
-    void traverse_accept( state* s, int distance );
-
     void build_actions( state* s );
     void report_conflicts( state* s );
     bool similar_conflict( conflict* a, conflict* b );
@@ -144,7 +177,6 @@ private:
 
     errors_ptr _errors;
     automata_ptr _automata;
-    bool _calculated_distances;
 
 };
 
