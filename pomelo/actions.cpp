@@ -68,7 +68,7 @@ void context::shift( state* next, terminal* term )
 context::shead context::shift( const shead& head, state* next, symbol* sym )
 {
 //    printf( "-->> %s\n", _automata->syntax->source->text( sym->name ) );
-    value_ptr v = std::make_unique< value >( head.stack, next, sym );
+    value_ptr v = std::make_unique< value >( head.stack, head.state, sym );
     shead move( v.get(), next, head.distance + 1 );
     _values.push_back( std::move( v ) );
     return move;
@@ -82,7 +82,7 @@ void context::reduce( rule* rule, terminal* term )
 
 context::shead context::reduce( const shead& head, rule* rule )
 {
-/*    printf( ">>>> %p %d\n", head.state, head.distance );
+ /*   printf( ">>>> %p %d\n", head.state, head.distance );
     for ( value* v = head.stack; v; v = v->prev )
     {
         printf( "    %p %s", v->state, _automata->syntax->source->text( v->symbol->name ) );
@@ -305,7 +305,9 @@ void actions::analyze()
         build_actions( state.get() );
     }
     
-    // Traverse automata using actions and check if any rules are 
+    // Traverse automata using actions and check if any rules are unreachable.
+    
+    
 }
 
 void actions::report_conflicts()
@@ -405,8 +407,8 @@ void actions::build_actions( state* s )
             case ACTION_REDUCE:
             {
                 // Attempt to resolve with precedence.
-                int old_prec = action->reduce->rule->precedence->precedence;
-                int new_prec = reduction->rule->precedence->precedence;
+                int old_prec = rule_precedence( action->reduce->rule );
+                int new_prec = rule_precedence( reduction->rule );
                 if ( old_prec != new_prec && old_prec != -1 && new_prec != -1 )
                 {
                     // This reduce/reduce conflict is resolved by precedence.
@@ -469,7 +471,7 @@ void actions::build_actions( state* s )
             {
                 // Attempt to resolve with precedence.
                 terminal* shift_symbol = (terminal*)transition->symbol;
-                int reduce_prec = action->reduce->rule->precedence->precedence;
+                int reduce_prec = rule_precedence( action->reduce->rule );
                 int shift_prec = shift_symbol->precedence;
                 
                 enum { UNKNOWN, SHIFT, REDUCE, CONFLICT } result = UNKNOWN;
@@ -550,6 +552,12 @@ void actions::build_actions( state* s )
         }
     }
 }
+
+int actions::rule_precedence( rule* r )
+{
+    return r->precedence ? r->precedence->precedence : -1;
+}
+
 
 
 void actions::report_conflicts( state* s )

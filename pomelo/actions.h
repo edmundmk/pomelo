@@ -114,7 +114,8 @@ private:
 
 
 /*
-    The actual parse tables.
+    The action table is the main parser table.  It maps ( state, terminal ) to
+    the action - error, shift, reduce, or conflict - to perform.
 */
 
 struct action_conflict
@@ -139,6 +140,12 @@ struct action_table
 
     int& lookup( int state, int terminal );
 };
+
+
+/*
+    The goto table indicates which state to transition to after a nonterminal
+    is reduced.  It maps ( state, nonterminal ) to the new state.
+*/
 
 struct goto_table
 {
@@ -171,6 +178,8 @@ public:
 private:
 
     void build_actions( state* s );
+    int rule_precedence( rule* r );
+    
     void report_conflicts( state* s );
     bool similar_conflict( conflict* a, conflict* b );
     void report_conflict( state* s, const std::vector< conflict* >& conflicts );
