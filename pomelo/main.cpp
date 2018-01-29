@@ -13,6 +13,7 @@
 #include "syntax.h"
 #include "parser.h"
 #include "lalr1.h"
+#include "actions.h"
 
 
 int main( int argc, const char* argv[] )
@@ -29,6 +30,11 @@ int main( int argc, const char* argv[] )
     parser_ptr parser = std::make_shared< ::parser >( errors, syntax );
     parser->parse( options.source.c_str() );
 
+    if ( options.syntax )
+    {
+        syntax->print();
+    }
+
     if ( errors->has_error() )
     {
         return EXIT_FAILURE;
@@ -41,6 +47,26 @@ int main( int argc, const char* argv[] )
     {
         automata->print( options.graph_rgoto );
     }
-
+    
+    if ( errors->has_error() )
+    {
+        return EXIT_FAILURE;
+    }
+    
+    actions_ptr actions = std::make_shared< ::actions >( errors, automata );
+    actions->analyze();
+    
+    if ( options.actions )
+    {
+        actions->print();
+    }
+    
+    actions->report_conflicts();
+    
+    if ( errors->has_error() )
+    {
+        return EXIT_FAILURE;
+    }
+    
     return EXIT_SUCCESS;
 }

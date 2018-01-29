@@ -218,8 +218,7 @@ void parser::parse_directive()
 
 void parser::parse_precedence( associativity associativity )
 {
-    int precedence = _precedence;
-    precedence += 1;
+    int precedence = _precedence++;
     
     next();
     while ( true )
@@ -257,6 +256,7 @@ void parser::parse_nonterminal()
         const char* name = _syntax->source->text( nonterminal->name );
         _errors->error( nonterminal->name.sloc, "nonterminal '%s' has already been defined", name );
     }
+    nonterminal->name = _token;
     nonterminal->defined = true;
 
     next();

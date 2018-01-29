@@ -23,8 +23,10 @@ struct options
     bool parse( int argc, const char* argv[] );
     
     std::string source;
+    bool syntax;
     bool graph;
     bool graph_rgoto;
+    bool actions;
 
 };
 

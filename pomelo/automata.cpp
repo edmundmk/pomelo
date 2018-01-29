@@ -52,7 +52,7 @@ void automata::print( bool rgoto )
             size_t iloc = state->closure->locations[ i ];
             const location& loc = syntax->locations[ iloc ];
             printf( "<tr><td>%s →", syntax->source->text( loc.rule->nonterminal->name ) );
-            for ( size_t i = 0; i < loc.rule->locount; ++i )
+            for ( size_t i = 0; i < loc.rule->locount - 1; ++i )
             {
                 size_t jloc = loc.rule->lostart + i;
                 const location& loc = syntax->locations[ jloc ];
@@ -60,7 +60,7 @@ void automata::print( bool rgoto )
                 {
                     printf( " ·" );
                 }
-                printf( " %s", loc.stoken ? syntax->source->text( loc.stoken ) : "." );
+                printf( " %s", syntax->source->text( loc.stoken ) );
             }
             if ( ! loc.symbol )
             {
@@ -152,9 +152,8 @@ reducefrom::reducefrom( ::rule* rule, transition* nonterminal, transition* final
 }
 
 
-reduction::reduction( ::rule* rule, reducefrom* rfrom )
+reduction::reduction( ::rule* rule )
     :   rule( rule )
-    ,   rfrom( rfrom )
 {
 }
 

@@ -60,13 +60,13 @@ struct syntax
     
     void print();
 
-    source_ptr      source;
-    directive       include;
-    directive       class_name;
-    directive       token_type;
-    directive       token_prefix;
-    directive       nterm_prefix;
-    nonterminal*    start;
+    source_ptr source;
+    directive include;
+    directive class_name;
+    directive token_type;
+    directive token_prefix;
+    directive nterm_prefix;
+    nonterminal* start;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;
     std::vector< location > locations;

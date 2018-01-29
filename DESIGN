@@ -10,16 +10,17 @@
 %nterm_prefix { NTERM_ }
 
 
+source
+[
+    LPN binary_expr RPN .
+]
 
 
 binary_expr { type }
 [
     binary_expr(a) BOR(op) binary_expr(b) .     { return new ( 2 ) ST_Node( op, { a, b } ); }
-    binary_expr(a) BAND(op) binary_expr(b) .    {}
-    binary_expr(a) OR(op) binary_expr(b) .      {}
-    binary_expr(a) AND(op) binary_expr(b) .     {}
-    binary_expr(a) XOR(op) binary_expr(b) .     {}
 ]
+
 
 
 

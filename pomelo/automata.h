@@ -66,6 +66,7 @@ struct automata
     explicit automata( syntax_ptr syntax );
     ~automata();
 
+    void ensure_distances();
     void print( bool rgoto );
 
     syntax_ptr syntax;
@@ -77,6 +78,7 @@ struct automata
     std::vector< reduction_ptr > reductions;
     std::vector< conflict_ptr > conflicts;
     uintptr_t visited;
+    bool has_distances;
 };
 
 struct conflict
@@ -153,10 +155,9 @@ struct reducefrom
 
 struct reduction
 {
-    reduction( rule* rule, reducefrom* rfrom );
+    explicit reduction( rule* rule );
 
     rule* rule;
-    reducefrom* rfrom;
     std::vector< terminal* > lookahead;
 };
 
