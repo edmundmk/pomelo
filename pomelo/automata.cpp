@@ -49,9 +49,9 @@ static void traverse_start( state* s, int distance )
     
     s->start_distance = distance;
     distance += 1;
-    for ( transition* transition : s->next )
+    for ( transition* trans : s->next )
     {
-        traverse_start( transition->next, distance );
+        traverse_start( trans->next, distance );
     }
 }
 
@@ -65,10 +65,10 @@ static void traverse_accept( state* s, int distance )
     
     s->accept_distance = distance;
     distance += 1;
-    for ( transition* transition : s->prev )
+    for ( transition* trans : s->prev )
     {
-        traverse_accept( transition->prev, distance );
-        for ( const auto& rfrom : transition->rfrom )
+        traverse_accept( trans->prev, distance );
+        for ( const auto& rfrom : trans->rfrom )
         {
             traverse_accept( rfrom->finalsymbol->next, distance );
         }
@@ -132,37 +132,37 @@ void automata::print( bool rgoto )
         }
         printf( "</table>>];\n" );
         
-        for ( transition* transition : state->next )
+        for ( transition* trans : state->next )
         {
-            if ( rgoto && ( transition->rfrom.size() | transition->rgoto.size() ) )
+            if ( rgoto && ( trans->rfrom.size() | trans->rgoto.size() ) )
             {
                 // Need to split this transition.
-                printf( "transplit%p [label=\"\", fixedsize=\"false\", width=0, height=0, shape=none];\n", transition );
+                printf( "transplit%p [label=\"\", fixedsize=\"false\", width=0, height=0, shape=none];\n", trans );
                 printf
                 (
                     "state%p -> transplit%p [label=\"%s\" arrowhead=none];\n",
-                    transition->prev,
-                    transition,
-                    syntax->source->text( transition->symbol->name )
+                    trans->prev,
+                    trans,
+                    syntax->source->text( trans->symbol->name )
                 );
-                printf( "transplit%p -> state%p;\n", transition, transition->next );
+                printf( "transplit%p -> state%p;\n", trans, trans->next );
             }
             else
             {
                 printf
                 (
                     "state%p -> state%p [label=\"%s\"]\n",
-                    transition->prev,
-                    transition->next,
-                    syntax->source->text( transition->symbol->name )
+                    trans->prev,
+                    trans->next,
+                    syntax->source->text( trans->symbol->name )
                 );
             }
             
             if ( rgoto )
             {
-                for ( ::reducefrom* reducefrom : transition->rgoto )
+                for ( ::reducefrom* reducefrom : trans->rgoto )
                 {
-                    printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", transition, reducefrom->nonterminal );
+                    printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", trans, reducefrom->nonterminal );
                 }
             }
         }

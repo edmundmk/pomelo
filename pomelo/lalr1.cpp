@@ -347,12 +347,12 @@ void lalr1::add_reducefroms( transition* nonterm )
             const location& loc = _automata->syntax->locations[ iloc ];
             
             // Follow transition.
-            for ( transition* transition : state->next )
+            for ( transition* trans : state->next )
             {
-                if ( transition->symbol == loc.symbol )
+                if ( trans->symbol == loc.symbol )
                 {
-                    fsymbol = transition;
-                    state = transition->next;
+                    fsymbol = trans;
+                    state = trans->next;
                     break;
                 }
             }
@@ -380,13 +380,13 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
     {
         // If it's not an epsilon reduction, then we need to follow the links
         // back from the final transitions of the rule.
-        for ( transition* transition : state->prev )
+        for ( transition* trans : state->prev )
         {
-            for ( reducefrom* reducefrom : transition->rgoto )
+            for ( reducefrom* reducefrom : trans->rgoto )
             {
                 if ( reducefrom->rule == rule )
                 {
-                    assert( reducefrom->finalsymbol == transition );
+                    assert( reducefrom->finalsymbol == trans );
                     follow_lookahead( reducefrom->nonterminal );
                 }
             }
@@ -396,11 +396,11 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
     {
         // Otherwise the transition that shifts the reduced nonterminal is one
         // of the next transitions from this state.
-        for ( transition* transition : state->next )
+        for ( transition* trans : state->next )
         {
-            if ( transition->symbol == rule->nonterminal )
+            if ( trans->symbol == rule->nonterminal )
             {
-                follow_lookahead( transition );
+                follow_lookahead( trans );
                 break;
             }
         }
@@ -418,21 +418,21 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
 }
 
 
-void lalr1::follow_lookahead( transition* transition )
+void lalr1::follow_lookahead( transition* trans )
 {
     // Cycles in these links occur in an ambiguous grammar.
-    if ( transition->visited == _automata->visited )
+    if ( trans->visited == _automata->visited )
     {
         return;
     }
     
     // We need to follow any other links from here to cover the cases where
     // a final symbol is itself a nonterminal.
-    transition->visited = _automata->visited;
-    direct_lookahead( transition->next );
-    for ( const auto& nestfinal : transition->rgoto )
+    trans->visited = _automata->visited;
+    direct_lookahead( trans->next );
+    for ( const auto& nestfinal : trans->rgoto )
     {
-        assert( nestfinal->finalsymbol == transition );
+        assert( nestfinal->finalsymbol == trans );
         follow_lookahead( nestfinal->nonterminal );
     }
 }
@@ -450,15 +450,15 @@ void lalr1::direct_lookahead( state* state )
     // out of a state, plus the direct lookahead from any successor state where
     // the transition symbol is eraseable.
     state->visited = _automata->visited;
-    for ( transition* transition : state->next )
+    for ( transition* trans : state->next )
     {
-        if ( transition->symbol->is_terminal )
+        if ( trans->symbol->is_terminal )
         {
-            _lookahead.insert( (terminal*)transition->symbol );
+            _lookahead.insert( (terminal*)trans->symbol );
         }
-        else if ( ( (nonterminal*)transition->symbol )->erasable )
+        else if ( ( (nonterminal*)trans->symbol )->erasable )
         {
-            direct_lookahead( transition->next );
+            direct_lookahead( trans->next );
         }
     }
 }

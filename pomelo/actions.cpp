@@ -31,13 +31,13 @@ context::context( automata_ptr automata, state* left_context )
     value* back = nullptr;
     while ( s->start_distance )
     {
-        for ( transition* transition : s->prev )
+        for ( transition* trans : s->prev )
         {
-            if ( transition->prev->start_distance < s->start_distance )
+            if ( trans->prev->start_distance < s->start_distance )
             {
-                s = transition->prev;
+                s = trans->prev;
                 
-                value_ptr v = std::make_unique< value >( nullptr, s, transition->symbol );
+                value_ptr v = std::make_unique< value >( nullptr, s, trans->symbol );
                 if ( back )
                 {
                     back->prev = v.get();
@@ -117,11 +117,11 @@ context::shead context::reduce( const shead& head, rule* rule )
     
     // Find state after shifting reduction.
     state* next_state = nullptr;
-    for ( transition* transition : valstate->next )
+    for ( transition* trans : valstate->next )
     {
-        if ( transition->symbol == rule->nonterminal )
+        if ( trans->symbol == rule->nonterminal )
         {
-            next_state = transition->next;
+            next_state = trans->next;
             break;
         }
     }
@@ -178,13 +178,13 @@ void context::search()
         
         // Also 'shift' nonterminals, in case that gets us to the accept state
         // quicker.
-        for ( transition* transition : head.state->next )
+        for ( transition* trans : head.state->next )
         {
-            if ( transition->symbol->is_terminal )
+            if ( trans->symbol->is_terminal )
             {
                 continue;
             }
-            _open.push( shift( head, transition->next, transition->symbol ) );
+            _open.push( shift( head, trans->next, trans->symbol ) );
         }
     }
     
@@ -364,12 +364,12 @@ void actions::print()
                 break;
             }
         }
-        for ( transition* transition : state->next )
+        for ( transition* trans : state->next )
         {
-            if ( transition->symbol->is_terminal )
+            if ( trans->symbol->is_terminal )
                 continue;
             
-            printf( "    ** %s -> %p\n", source->text( transition->symbol->name ), transition->next );
+            printf( "    ** %s -> %p\n", source->text( trans->symbol->name ), trans->next );
         }
     }
 }
@@ -442,14 +442,14 @@ void actions::build_actions( state* s )
     }
     
     // Go through all transitions of terminals and check shift/reduce conflicts.
-    for ( transition* transition : s->next )
+    for ( transition* trans : s->next )
     {
-        if ( ! transition->symbol->is_terminal )
+        if ( ! trans->symbol->is_terminal )
         {
             continue;
         }
     
-        action* action = &s->actions.at( transition->symbol->value );
+        action* action = &s->actions.at( trans->symbol->value );
         
         switch ( action->kind )
         {
@@ -457,7 +457,7 @@ void actions::build_actions( state* s )
             {
                 // Set reduction.
                 action->kind = ACTION_SHIFT;
-                action->shift = transition;
+                action->shift = trans;
                 break;
             }
 
@@ -470,7 +470,7 @@ void actions::build_actions( state* s )
             case ACTION_REDUCE:
             {
                 // Attempt to resolve with precedence.
-                terminal* shift_symbol = (terminal*)transition->symbol;
+                terminal* shift_symbol = (terminal*)trans->symbol;
                 int reduce_prec = rule_precedence( action->reduce->rule );
                 int shift_prec = shift_symbol->precedence;
                 
@@ -519,7 +519,7 @@ void actions::build_actions( state* s )
                 case SHIFT:
                 {
                     action->kind = ACTION_SHIFT;
-                    action->shift = transition;
+                    action->shift = trans;
                     break;
                 }
                 
@@ -532,7 +532,7 @@ void actions::build_actions( state* s )
                 case CONFLICT:
                 {
                     conflict_ptr conflict = std::make_unique< ::conflict >( shift_symbol );
-                    conflict->shift = transition;
+                    conflict->shift = trans;
                     conflict->reduce.push_back( action->reduce );
                     action->kind = ACTION_CONFLICT;
                     action->conflict = conflict.get();
@@ -546,7 +546,7 @@ void actions::build_actions( state* s )
             case ACTION_CONFLICT:
             {
                 // Add shift to the conflict.
-                action->conflict->shift = transition;
+                action->conflict->shift = trans;
                 break;
             }
         }
@@ -619,9 +619,26 @@ bool actions::similar_conflict( conflict* a, conflict* b )
 }
 
 
+#include "search.h"
+
+
 void actions::report_conflict( state* s, const std::vector< conflict* >& conflicts )
 {
     source_ptr source = _automata->syntax->source;
+    
+    
+    left_search lsearch( _automata, s );
+    while ( left_context_ptr lcontext = lsearch.generate() )
+    {
+        fprintf( stderr, "CONTEXT :" );
+        for ( const auto& value : lcontext->context )
+        {
+            fprintf( stderr, " %s", source->text( value.symbol->name ) );
+        }
+        fprintf( stderr, "\n" );
+    }
+    
+    
     
     // Tokens involved in conflict.
     std::string report = "parsing conflict on";
