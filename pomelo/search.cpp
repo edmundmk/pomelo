@@ -221,7 +221,7 @@ bool parse_search::reduce( rule* rule, terminal* term )
 
 bool parse_search::search()
 {
-    const size_t open_limit = 100;
+    const size_t open_limit = 500;
     while ( ! _open.empty() && _open.size() < open_limit )
     {
         // Get lowest-cost parse state.
