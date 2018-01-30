@@ -221,7 +221,8 @@ bool parse_search::reduce( rule* rule, terminal* term )
 
 bool parse_search::search()
 {
-    while ( _open.size() )
+    const size_t open_limit = 100;
+    while ( ! _open.empty() && _open.size() < open_limit )
     {
         // Get lowest-cost parse state.
         search_head head = _open.top();
@@ -253,7 +254,7 @@ bool parse_search::search()
         }
         
         // Check if all moves failed and there are no alternatives.
-        if ( _open.empty() )
+        if ( _open.empty() || _open.size() >= open_limit )
         {
             // Add error marker to end.
             auto v = std::make_unique< value >( head.stack, nullptr, nullptr );

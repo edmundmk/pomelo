@@ -78,14 +78,14 @@ public:
     actions( errors_ptr errors, automata_ptr automata );
     actions();
     
-    void analyze();
+    void analyze( bool report_resolved_conflicts );
     void report_conflicts();
     void print();
 
 
 private:
 
-    void build_actions( state* s );
+    void build_actions( state* s, bool report_resolved_conflicts );
     int rule_precedence( rule* r );
     srcloc rule_location( rule* r );
     

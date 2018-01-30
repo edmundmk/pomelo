@@ -25,12 +25,12 @@ actions::actions()
 
 
 
-void actions::analyze()
+void actions::analyze( bool report_resolved_conflicts )
 {
     // Work out actions for each state.
     for ( const auto& state : _automata->states )
     {
-        build_actions( state.get() );
+        build_actions( state.get(), report_resolved_conflicts );
     }
     
     // Traverse automata using actions and check if any rules are unreachable.
@@ -103,7 +103,7 @@ void actions::print()
 }
 
 
-void actions::build_actions( state* s )
+void actions::build_actions( state* s, bool report_resolved_conflicts )
 {
     source_ptr source = _automata->syntax->source;
 
@@ -152,14 +152,17 @@ void actions::build_actions( state* s )
                         winner = action->reduce;
                     }
                     
-                    _errors->info
-                    (
-                        rule_location( winner->rule ),
-                        "conflict reduce %s/reduce %s resolved in favour of reduce %s",
-                        source->text( action->reduce->rule->nonterminal->name ),
-                        source->text( reduction->rule->nonterminal->name ),
-                        source->text( winner->rule->nonterminal->name )
-                    );
+                    if ( report_resolved_conflicts )
+                    {
+                        _errors->info
+                        (
+                            rule_location( winner->rule ),
+                            "conflict reduce %s/reduce %s resolved in favour of reduce %s",
+                            source->text( action->reduce->rule->nonterminal->name ),
+                            source->text( reduction->rule->nonterminal->name ),
+                            source->text( winner->rule->nonterminal->name )
+                        );
+                    }
                     
                     action->reduce = winner;
                 }
@@ -264,14 +267,17 @@ void actions::build_actions( state* s )
                 
                 case SHIFT:
                 {
-                    _errors->info
-                    (
-                        trans->token.sloc,
-                        "conflict shift %s/reduce %s resolved in favour of shift %s",
-                        source->text( shift_symbol->name ),
-                        source->text( action->reduce->rule->nonterminal->name ),
-                        source->text( shift_symbol->name )
-                    );
+                    if ( report_resolved_conflicts )
+                    {
+                        _errors->info
+                        (
+                            trans->token.sloc,
+                            "conflict shift %s/reduce %s resolved in favour of shift %s",
+                            source->text( shift_symbol->name ),
+                            source->text( action->reduce->rule->nonterminal->name ),
+                            source->text( shift_symbol->name )
+                        );
+                    }
                     action->kind = ACTION_SHIFT;
                     action->shift = trans;
                     break;
@@ -280,14 +286,17 @@ void actions::build_actions( state* s )
                 case REDUCE:
                 {
                     // Reduction is already present in the action.
-                    _errors->info
-                    (
-                        rule_location( action->reduce->rule ),
-                        "conflict shift %s/reduce %s resolved in favour of reduce %s",
-                        source->text( shift_symbol->name ),
-                        source->text( action->reduce->rule->nonterminal->name ),
-                        source->text( action->reduce->rule->nonterminal->name )
-                    );
+                    if ( report_resolved_conflicts )
+                    {
+                        _errors->info
+                        (
+                            rule_location( action->reduce->rule ),
+                            "conflict shift %s/reduce %s resolved in favour of reduce %s",
+                            source->text( shift_symbol->name ),
+                            source->text( action->reduce->rule->nonterminal->name ),
+                            source->text( action->reduce->rule->nonterminal->name )
+                        );
+                    }
                     break;
                 }
                 

@@ -54,7 +54,7 @@ int main( int argc, const char* argv[] )
     }
     
     actions_ptr actions = std::make_shared< ::actions >( errors, automata );
-    actions->analyze();
+    actions->analyze( options.resolved_conflicts );
     
     if ( options.actions )
     {

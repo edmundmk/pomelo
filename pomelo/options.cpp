@@ -16,6 +16,7 @@ options::options()
     ,   graph( false )
     ,   graph_rgoto( false )
     ,   actions( false )
+    ,   resolved_conflicts( false )
 {
 }
 
@@ -48,6 +49,10 @@ bool options::parse( int argc, const char* argv[] )
         else if ( strcmp( arg, "--actions" ) == 0 )
         {
             actions = true;
+        }
+        else if ( strcmp( arg, "--resolved-conflicts" ) == 0 )
+        {
+            resolved_conflicts = true;
         }
         else
         {

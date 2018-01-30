@@ -27,6 +27,7 @@ struct options
     bool graph;
     bool graph_rgoto;
     bool actions;
+    bool resolved_conflicts;
 
 };
 
