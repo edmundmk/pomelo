@@ -87,6 +87,7 @@ private:
 
     void build_actions( state* s );
     int rule_precedence( rule* r );
+    srcloc rule_location( rule* r );
     
     void report_conflicts( state* s );
     bool similar_conflict( conflict* a, conflict* b );

@@ -105,6 +105,8 @@ void actions::print()
 
 void actions::build_actions( state* s )
 {
+    source_ptr source = _automata->syntax->source;
+
     // All actions in the state start off as errors.
     size_t terminals_count = _automata->syntax->terminals.size();
     s->actions.assign( terminals_count, { ACTION_ERROR } );
@@ -140,10 +142,26 @@ void actions::build_actions( state* s )
                 if ( old_prec != new_prec && old_prec != -1 && new_prec != -1 )
                 {
                     // This reduce/reduce conflict is resolved by precedence.
+                    ::reduction* winner;
                     if ( new_prec > old_prec )
                     {
-                        action->reduce = reduction;
+                        winner = reduction;
                     }
+                    else
+                    {
+                        winner = action->reduce;
+                    }
+                    
+                    _errors->info
+                    (
+                        rule_location( winner->rule ),
+                        "conflict reduce %s/reduce %s resolved in favour of reduce %s",
+                        source->text( action->reduce->rule->nonterminal->name ),
+                        source->text( reduction->rule->nonterminal->name ),
+                        source->text( winner->rule->nonterminal->name )
+                    );
+                    
+                    action->reduce = winner;
                 }
                 else
                 {
@@ -183,9 +201,20 @@ void actions::build_actions( state* s )
         {
             case ACTION_ERROR:
             {
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                 // Set reduction.
                 action->kind = ACTION_SHIFT;
                 action->shift = trans;
+                
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                 break;
             }
 
@@ -197,6 +226,13 @@ void actions::build_actions( state* s )
             
             case ACTION_REDUCE:
             {
+
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
+
                 // Attempt to resolve with precedence.
                 terminal* shift_symbol = (terminal*)trans->symbol;
                 int reduce_prec = rule_precedence( action->reduce->rule );
@@ -236,6 +272,12 @@ void actions::build_actions( state* s )
                     result = CONFLICT;
                 }
                 
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
+                
                 switch ( result )
                 {
                 case UNKNOWN:
@@ -246,19 +288,62 @@ void actions::build_actions( state* s )
                 
                 case SHIFT:
                 {
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
+                    _errors->info
+                    (
+                        trans->token.sloc,
+                        "conflict shift %s/reduce %s resolved in favour of shift %s",
+                        source->text( shift_symbol->name ),
+                        source->text( action->reduce->rule->nonterminal->name ),
+                        source->text( shift_symbol->name )
+                    );
                     action->kind = ACTION_SHIFT;
                     action->shift = trans;
+                    
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                     break;
                 }
                 
                 case REDUCE:
                 {
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                     // Reduction is already present in the action.
+                    _errors->info
+                    (
+                        rule_location( action->reduce->rule ),
+                        "conflict shift %s/reduce %s resolved in favour of reduce %s",
+                        source->text( shift_symbol->name ),
+                        source->text( action->reduce->rule->nonterminal->name ),
+                        source->text( action->reduce->rule->nonterminal->name )
+                    );
+
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                     break;
                 }
                 
                 case CONFLICT:
                 {
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                     conflict_ptr conflict = std::make_unique< ::conflict >( shift_symbol );
                     conflict->shift = trans;
                     conflict->reduce.push_back( action->reduce );
@@ -266,18 +351,43 @@ void actions::build_actions( state* s )
                     action->conflict = conflict.get();
                     _automata->conflicts.push_back( std::move( conflict ) );
                     s->has_conflict = true;
+
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                     break;
                 }
                 }
+                break;
             }
             
             case ACTION_CONFLICT:
             {
-                // Add shift to the conflict.
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
+
+                // Add shift to the conflict.  TODO: check precedence against
+                // all reductions if they are all either SHIFT or REDUCE.
                 action->conflict->shift = trans;
+                
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
+    }
+
                 break;
             }
         }
+    }
+    
+    for ( const auto& x : _automata->reductions )
+    {
+        assert( x->lookahead.size() < 1000 );
     }
 }
 
@@ -286,6 +396,12 @@ int actions::rule_precedence( rule* r )
     return r->precedence ? r->precedence->precedence : -1;
 }
 
+srcloc actions::rule_location( rule* r )
+{
+    size_t iloc = r->lostart;
+    const location& loc = _automata->syntax->locations[ iloc ];
+    return loc.stoken.sloc;
+}
 
 
 void actions::report_conflicts( state* s )
@@ -308,7 +424,7 @@ void actions::report_conflicts( state* s )
         
         for ( size_t j = i; j < s->actions.size(); ++j )
         {
-            ::action* similar = &s->actions.at( i++ );
+            ::action* similar = &s->actions.at( j++ );
             if ( similar->kind != ACTION_CONFLICT || action->conflict->reported )
             {
                 continue;
@@ -440,10 +556,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         report += "\n       ";
         reduce.second->print( &report );
         
-        size_t iloc = reduce.first->lostart;
-        const location& loc = _automata->syntax->locations[ iloc ];
-        srcloc sloc = loc.stoken.sloc;
-        _errors->info( sloc, "%s", report.c_str() );
+        _errors->info( rule_location( reduce.first ), "%s", report.c_str() );
     }
 }
 

@@ -356,6 +356,11 @@ void parser::parse_rule( nonterminal* nonterminal )
         else
         {
             expected( "symbol or '.'" );
+            if ( _lexed == ']' )
+            {
+                break;
+            }
+            next();
         }
     }
 
