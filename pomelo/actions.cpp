@@ -9,279 +9,7 @@
 
 #include <assert.h>
 #include "actions.h"
-
-
-bool context::heuristic::operator () ( const shead& a, const shead& b ) const
-{
-    int acost = a.distance + a.state->accept_distance;
-    int bcost = b.distance + b.state->accept_distance;
-    return acost > bcost;
-}
-
-
-
-context::context( automata_ptr automata, state* left_context )
-    :   _automata( automata )
-    ,   _left( nullptr, left_context, 0 )
-    ,   _tree( nullptr, nullptr, 0 )
-{
-    // Build stack backwards by following transitions back with lower
-    // start_distances until we get to the start state.
-    state* s = left_context;
-    value* back = nullptr;
-    while ( s->start_distance )
-    {
-        for ( transition* trans : s->prev )
-        {
-            if ( trans->prev->start_distance < s->start_distance )
-            {
-                s = trans->prev;
-                
-                value_ptr v = std::make_unique< value >( nullptr, s, trans->symbol );
-                if ( back )
-                {
-                    back->prev = v.get();
-                }
-                else
-                {
-                    _left.stack = v.get();
-                }
-            
-                back = v.get();
-                _values.push_back( std::move( v ) );
-                break;
-            }
-        }
-    }
-}
-
-context::~context()
-{
-}
-
-
-void context::shift( state* next, terminal* term )
-{
-    _open.push( shift( _left, next, term ) );
-}
-
-context::shead context::shift( const shead& head, state* next, symbol* sym )
-{
-//    printf( "-->> %s\n", _automata->syntax->source->text( sym->name ) );
-    value_ptr v = std::make_unique< value >( head.stack, head.state, sym );
-    shead move( v.get(), next, head.distance + 1 );
-    _values.push_back( std::move( v ) );
-    return move;
-}
-
-
-void context::reduce( rule* rule, terminal* term )
-{
-    parse( reduce( _left, rule ), term );
-}
-
-context::shead context::reduce( const shead& head, rule* rule )
-{
- /*   printf( ">>>> %p %d\n", head.state, head.distance );
-    for ( value* v = head.stack; v; v = v->prev )
-    {
-        printf( "    %p %s", v->state, _automata->syntax->source->text( v->symbol->name ) );
-        if ( v->ctail )
-        {
-            std::string result;
-            print( v->ctail, v->chead, &result );
-            printf( " [ %s ]\n", result.c_str() );
-        }
-        else
-        {
-            printf( "\n" );
-        }
-    }
-*/
-    // Pop stack.
-    size_t reduce_count = rule->locount - 1;
-    state* valstate = head.state;
-    value* valprev = head.stack;
-    value* chead = nullptr;
-    value* ctail = nullptr;
-    if ( reduce_count )
-    {
-        ctail = head.stack;
-        for ( size_t i = 0; i < reduce_count; ++i )
-        {
-            chead = valprev;
-            valstate = valprev->state;
-            valprev = valprev->prev;
-        }
-    }
-    
-    // Find state after shifting reduction.
-    state* next_state = nullptr;
-    for ( transition* trans : valstate->next )
-    {
-        if ( trans->symbol == rule->nonterminal )
-        {
-            next_state = trans->next;
-            break;
-        }
-    }
-    assert( next_state );
-    
-    // Create new value and new head.
-    value_ptr v = std::make_unique< value >( valprev, valstate, rule->nonterminal );
-    v->chead = chead;
-    v->ctail = ctail;
-    shead move( v.get(), next_state, head.distance + 1 );
-    _values.push_back( std::move( v ) );
-
-/*
-    printf( "<<<< %p %d\n", move.state, move.distance );
-    for ( value* v = move.stack; v; v = v->prev )
-    {
-        printf( "    %p %s", v->state, _automata->syntax->source->text( v->symbol->name ) );
-        if ( v->ctail )
-        {
-            std::string result;
-            print( v->ctail, v->chead, &result );
-            printf( " [ %s ]\n", result.c_str() );
-        }
-        else
-        {
-            printf( "\n" );
-        }
-    }
-*/
-    return move;
-}
-
-void context::search()
-{
-    while ( _open.size() )
-    {
-        // Get lowest-cost parse state.
-        shead head = _open.top();
-        _open.pop();
-        
-        // If the parse state accepts, we are done.
-        if ( ! head.state->accept_distance )
-        {
-            _tree = head;
-            return;
-        }
-        
-        // Evaluate all valid tokens from this state.
-        for ( const auto& entry : _automata->syntax->terminals )
-        {
-            terminal* term = entry.second.get();
-            parse( head, term );
-        }
-        
-        // Also 'shift' nonterminals, in case that gets us to the accept state
-        // quicker.
-        for ( transition* trans : head.state->next )
-        {
-            if ( trans->symbol->is_terminal )
-            {
-                continue;
-            }
-            _open.push( shift( head, trans->next, trans->symbol ) );
-        }
-    }
-    
-    // This ended up invalid, probably because the left context is insufficient.
-    _tree = _left;
-}
-
-void context::parse( const shead& head, terminal* term )
-{
-//    printf( "---> %s\n", _automata->syntax->source->text( term->name ) );
-
-    // Perform a parsing step from head.
-    shead move = head;
-    while ( true )
-    {
-        const action& action = move.state->actions.at( term->value );
-        switch ( action.kind )
-        {
-        case ACTION_ERROR:
-            // Parse error results from this branch.
-            return;
-            
-        case ACTION_SHIFT:
-            // Shift terminal and then return.
-            _open.push( shift( move, action.shift->next, term ) );
-            return;
-            
-        case ACTION_REDUCE:
-            // Reduce terminal and continue until we can shift.
-            move = reduce( move, action.reduce->rule );
-            continue;
-        
-        case ACTION_CONFLICT:
-            // Perform all possible actions.
-            if ( action.conflict->shift )
-            {
-                _open.push( shift( move, action.conflict->shift->next, term ) );
-            }
-            for ( reduction* reduction : action.conflict->reduce )
-            {
-                parse( reduce( move, reduction->rule ), term );
-            }
-            return;
-        }
-    }
-}
-
-void context::print( std::string* out_print )
-{
-    if ( _tree.stack && _tree.stack->prev && _tree.stack->prev->ctail )
-    {
-        value* v = _tree.stack->prev;
-        print( v->ctail, v->chead, out_print );
-    }
-    else
-    {
-        print( _tree.stack, nullptr, out_print );
-    }
-}
-
-void context::print( const value* tail, const value* head, std::string* out_print )
-{
-    // Get values in order.
-    std::vector< const value* > values;
-    for ( const value* child = tail; child; child = child->prev )
-    {
-        values.push_back( child );
-        if ( child == head )
-        {
-            break;
-        }
-    }
-    std::reverse( values.begin(), values.end() );
-
-    // Print values.
-    source_ptr source = _automata->syntax->source;
-    for ( const value* v : values )
-    {
-        if ( v->ctail )
-        {
-            out_print->append( " [" );
-            print( v->ctail, v->chead, out_print );
-            out_print->append( " ]" );
-        }
-        else
-        {
-            out_print->append( " " );
-            out_print->append( source->text( v->symbol->name ) );
-            if ( v == _left.stack )
-            {
-                out_print->append( " ·" );
-            }
-        }
-    }
-}
-
-
+#include "search.h"
 
 
 
@@ -619,27 +347,12 @@ bool actions::similar_conflict( conflict* a, conflict* b )
 }
 
 
-#include "search.h"
 
 
 void actions::report_conflict( state* s, const std::vector< conflict* >& conflicts )
 {
     source_ptr source = _automata->syntax->source;
-    
-    
-    left_search lsearch( _automata, s );
-    while ( left_context_ptr lcontext = lsearch.generate() )
-    {
-        fprintf( stderr, "CONTEXT :" );
-        for ( const auto& value : lcontext->context )
-        {
-            fprintf( stderr, " %s", source->text( value.symbol->name ) );
-        }
-        fprintf( stderr, "\n" );
-    }
-    
-    
-    
+
     // Tokens involved in conflict.
     std::string report = "parsing conflict on";
     for ( conflict* conflict : conflicts )
@@ -648,11 +361,11 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         report += source->text( conflict->terminal->name );
     }
 
-    // Find example shift with shortest context.
+    // Work out which token to use in examples.
+    state* next_state = nullptr;
     terminal* next_token = nullptr;
     if ( conflicts.front()->shift )
     {
-        state* next_state = nullptr;
         for ( conflict* conflict : conflicts )
         {
             // Emulate parse with this potential conflict token.
@@ -664,33 +377,56 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
                 next_token = conflict->terminal;
             }
         }
-    
-        // Calculate example context.
-        context scontext( _automata, s );
-        scontext.shift( next_state, next_token );
-        scontext.search();
-    
-        // Report shift.
-        report += "\n    shift\n       ";
-        scontext.print( &report );
+    }
+    else
+    {
+        next_token = conflicts.front()->terminal;
     }
     
-    // Emulate reductions using the same token, or a random one.
-    next_token = next_token ? next_token : conflicts.front()->terminal;
-
-    // Find example for each reduction.  Reductions should be identical.
-    for ( reduction* reduce : conflicts.front()->reduce )
+    // Find left context which successfully supports all conflicting actions.
+    parse_search_ptr sp;
+    std::vector< std::pair< rule*, parse_search_ptr > > reducep;
+    
+    left_search_ptr lsearch = std::make_shared< left_search >( _automata, s );
+    while ( left_context_ptr lcontext = lsearch->generate() )
     {
-        // Emulate continuing the parse by reducing then with the terminal.
-        context rcontext( _automata, s );
-        rcontext.reduce( reduce->rule, next_token );
-        rcontext.search();
+        bool success = true;
+    
+        if ( conflicts.front()->shift )
+        {
+            assert( next_state );
+            sp = std::make_shared< parse_search >( _automata, lcontext );
+            success = success && sp->shift( next_state, next_token );
+        }
         
-        // Report reduction.
+        reducep.clear();
+        for ( reduction* reduce : conflicts.front()->reduce )
+        {
+            auto rp = std::make_shared< parse_search >( _automata, lcontext );
+            success = success && rp->reduce( reduce->rule, next_token );
+            reducep.emplace_back( reduce->rule, rp );
+        }
+    
+        if ( success )
+        {
+            break;
+        }
+    }
+    
+    // Perform right-context searches and report results.
+    if ( sp )
+    {
+        sp->search();
+        report += "\n    shift\n       ";
+        sp->print( &report );
+    }
+    for ( const auto& reduce : reducep )
+    {
+        reduce.second->search();
         report += "\n    reduce ";
-        report += source->text( reduce->rule->nonterminal->name );
+        report += source->text( reduce.first->nonterminal->name );
         report += "\n       ";
-        rcontext.print( &report );
+        reduce.second->print( &report );
     }
 
     // Actually print conflict.  Make a guess at a related source location.

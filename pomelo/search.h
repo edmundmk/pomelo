@@ -15,6 +15,16 @@
 #include "automata.h"
 
 
+struct left_context;
+class left_search;
+class parse_search;
+
+typedef std::shared_ptr< left_context > left_context_ptr;
+typedef std::shared_ptr< left_search > left_search_ptr;
+typedef std::shared_ptr< parse_search > parse_search_ptr;
+
+
+
 /*
     To print a meaningful example of a conflict, we need to build parse trees
     exhibiting the results of the actions that the parser could take.  This
@@ -42,7 +52,6 @@ struct left_context
     std::vector< left_context_value > context;
 };
 
-typedef std::shared_ptr< left_context > left_context_ptr;
 
 
 
@@ -108,7 +117,7 @@ private:
 /*
     Produces an example parse tree exibiting a particular parser action, given
     a particular left context.  If the action cannot be performed then the user
-    should retry with a new left context.
+    can retry with a new left context.
  
     If the action succeeds in the immediate context, then it proceeds to search
     through the actions in the DFA until it finds an accept state (i.e. a valid
@@ -121,10 +130,11 @@ class parse_search
 public:
 
     parse_search( automata_ptr automata, left_context_ptr lcontext );
+    ~parse_search();
 
-    bool shift( terminal* term );
+    bool shift( state* next, terminal* term );
     bool reduce( rule* rule, terminal* term );
-    void search();
+    bool search();
     void print( std::string* out_print );
 
 
@@ -169,7 +179,7 @@ private:
     
     /*
         The search heuristic is the number of symbols shifted plus the shortest
-        distance through the DFA from the current state to the
+        distance through the DFA from the current state to the accept state.
     */
     
     struct heuristic
@@ -178,11 +188,17 @@ private:
     };
 
     
+    void parse( const search_head& head, terminal* term );
+    search_head shift( const search_head& head, state* next, symbol* sym );
+    search_head reduce( const search_head& head, rule* rule );
+    
+    void print( const value* tail, const value* head, std::string* out_print );
+    
 
     automata_ptr _automata;
     std::vector< value_ptr > _values;
     search_head _left;
-    search_head _tree;
+    value* _accept;
     std::priority_queue< search_head, std::vector< search_head >, heuristic > _open;
 
 };
