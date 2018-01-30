@@ -253,7 +253,7 @@ void lalr1::add_transitions( state* pstate )
         
         // Close state.
         state* nstate = close_state();
-        transition_ptr trans = std::make_unique< transition >( pstate, nstate, nsym );
+        transition_ptr trans = std::make_unique< transition >( pstate, nstate, nsym, l.stoken );
         pstate->next.push_back( trans.get() );
         nstate->prev.push_back( trans.get() );
         _automata->transitions.push_back( std::move( trans ) );

@@ -121,11 +121,12 @@ struct state
 
 struct transition
 {
-    transition( state* prev, state* next, symbol* nsym );
+    transition( state* prev, state* next, symbol* nsym, token token );
 
     state* prev;
     state* next;
     symbol* symbol;
+    token token;
     std::vector< reducefrom* > rfrom; // links to reachable final transitions.
     std::vector< reducefrom* > rgoto; // link from final transition to nonterminal.
     uintptr_t visited;

@@ -53,6 +53,7 @@ public:
     
     void error( srcloc sloc, const char* format, ... ) PRINTF_FORMAT( 3, 4 );
     void warning( srcloc sloc, const char* format, ... ) PRINTF_FORMAT( 3, 4 );
+    void info( srcloc sloc, const char* format, ... ) PRINTF_FORMAT( 3, 4 );
     bool has_error();
     
     

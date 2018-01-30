@@ -352,6 +352,7 @@ bool actions::similar_conflict( conflict* a, conflict* b )
 void actions::report_conflict( state* s, const std::vector< conflict* >& conflicts )
 {
     source_ptr source = _automata->syntax->source;
+    conflict* cflict = conflicts.front();
 
     // Tokens involved in conflict.
     std::string report = "parsing conflict on";
@@ -361,10 +362,13 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         report += source->text( conflict->terminal->name );
     }
 
+    srcloc sloc = cflict->reduce.front()->rule->nonterminal->name.sloc;
+    _errors->warning( sloc, "%s", report.c_str() );
+
     // Work out which token to use in examples.
     state* next_state = nullptr;
     terminal* next_token = nullptr;
-    if ( conflicts.front()->shift )
+    if ( cflict->shift )
     {
         for ( conflict* conflict : conflicts )
         {
@@ -392,7 +396,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
     {
         bool success = true;
     
-        if ( conflicts.front()->shift )
+        if ( cflict->shift )
         {
             assert( next_state );
             sp = std::make_shared< parse_search >( _automata, lcontext );
@@ -400,7 +404,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         }
         
         reducep.clear();
-        for ( reduction* reduce : conflicts.front()->reduce )
+        for ( reduction* reduce : cflict->reduce )
         {
             auto rp = std::make_shared< parse_search >( _automata, lcontext );
             success = success && rp->reduce( reduce->rule, next_token );
@@ -417,21 +421,30 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
     if ( sp )
     {
         sp->search();
-        report += "\n    shift\n       ";
+
+        report.clear();
+        report += "shift\n       ";
         sp->print( &report );
+        
+        srcloc sloc = cflict->shift->token.sloc;
+        _errors->info( sloc, "%s", report.c_str() );
     }
+    
     for ( const auto& reduce : reducep )
     {
         reduce.second->search();
-        report += "\n    reduce ";
+
+        report.clear();
+        report += "reduce ";
         report += source->text( reduce.first->nonterminal->name );
         report += "\n       ";
         reduce.second->print( &report );
+        
+        size_t iloc = reduce.first->lostart;
+        const location& loc = _automata->syntax->locations[ iloc ];
+        srcloc sloc = loc.stoken.sloc;
+        _errors->info( sloc, "%s", report.c_str() );
     }
-
-    // Actually print conflict.  Make a guess at a related source location.
-    srcloc sloc = conflicts.front()->reduce.front()->rule->nonterminal->name.sloc;
-    _errors->warning( sloc, "%s", report.c_str() );
 }
 
 

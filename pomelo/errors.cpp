@@ -26,7 +26,7 @@ void errors::error( srcloc sloc, const char* format, ... )
 {
     va_list args;
     va_start( args, format );
-    diagnostic( sloc, "error", format, args );
+    diagnostic( sloc, "error: ", format, args );
     va_end( args );
     _has_error = true;
 }
@@ -35,10 +35,17 @@ void errors::warning( srcloc sloc, const char* format, ... )
 {
     va_list args;
     va_start( args, format );
-    diagnostic( sloc, "warning", format, args );
+    diagnostic( sloc, "warning: ", format, args );
     va_end( args );
 }
 
+void errors::info( srcloc sloc, const char* format, ... )
+{
+    va_list args;
+    va_start( args, format );
+    diagnostic( sloc, "note: ", format, args );
+    va_end( args );
+}
 
 bool errors::has_error()
 {
@@ -53,7 +60,7 @@ void errors::diagnostic( srcloc sloc, const char* kind, const char* format, va_l
     fprintf
     (
         _err,
-        "%s:%d:%d: %s: ",
+        "%s:%d:%d: %s",
         fl.file,
         fl.line,
         fl.column,

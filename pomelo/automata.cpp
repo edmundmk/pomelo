@@ -189,11 +189,12 @@ state::state( closure_ptr&& closure )
 }
 
 
-transition::transition( state* prev, state* next, ::symbol* nsym )
+transition::transition( state* prev, state* next, ::symbol* nsym, ::token token )
     :   prev( prev )
     ,   next( next )
     ,   symbol( nsym )
     ,   visited( 0 )
+    ,   token( token )
 {
 }
 
