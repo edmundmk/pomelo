@@ -201,20 +201,9 @@ void actions::build_actions( state* s )
         {
             case ACTION_ERROR:
             {
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                 // Set reduction.
                 action->kind = ACTION_SHIFT;
                 action->shift = trans;
-                
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                 break;
             }
 
@@ -226,13 +215,6 @@ void actions::build_actions( state* s )
             
             case ACTION_REDUCE:
             {
-
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
-
                 // Attempt to resolve with precedence.
                 terminal* shift_symbol = (terminal*)trans->symbol;
                 int reduce_prec = rule_precedence( action->reduce->rule );
@@ -272,12 +254,6 @@ void actions::build_actions( state* s )
                     result = CONFLICT;
                 }
                 
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
-                
                 switch ( result )
                 {
                 case UNKNOWN:
@@ -288,11 +264,6 @@ void actions::build_actions( state* s )
                 
                 case SHIFT:
                 {
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                     _errors->info
                     (
                         trans->token.sloc,
@@ -303,22 +274,11 @@ void actions::build_actions( state* s )
                     );
                     action->kind = ACTION_SHIFT;
                     action->shift = trans;
-                    
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                     break;
                 }
                 
                 case REDUCE:
                 {
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                     // Reduction is already present in the action.
                     _errors->info
                     (
@@ -328,22 +288,11 @@ void actions::build_actions( state* s )
                         source->text( action->reduce->rule->nonterminal->name ),
                         source->text( action->reduce->rule->nonterminal->name )
                     );
-
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                     break;
                 }
                 
                 case CONFLICT:
                 {
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                     conflict_ptr conflict = std::make_unique< ::conflict >( shift_symbol );
                     conflict->shift = trans;
                     conflict->reduce.push_back( action->reduce );
@@ -351,12 +300,6 @@ void actions::build_actions( state* s )
                     action->conflict = conflict.get();
                     _automata->conflicts.push_back( std::move( conflict ) );
                     s->has_conflict = true;
-
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                     break;
                 }
                 }
@@ -365,29 +308,12 @@ void actions::build_actions( state* s )
             
             case ACTION_CONFLICT:
             {
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
-
                 // Add shift to the conflict.  TODO: check precedence against
                 // all reductions if they are all either SHIFT or REDUCE.
                 action->conflict->shift = trans;
-                
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
-    }
-
                 break;
             }
         }
-    }
-    
-    for ( const auto& x : _automata->reductions )
-    {
-        assert( x->lookahead.size() < 1000 );
     }
 }
 
