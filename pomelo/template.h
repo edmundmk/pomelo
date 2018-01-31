@@ -1,5 +1,5 @@
 //
-//  template.h
+//  parser template
 //  pomelo
 //
 //  Created by Edmund Kapusniak on 28/01/2018.
@@ -7,73 +7,48 @@
 //
 
 
-#ifndef TEMPLATE_H
-#define TEMPLATE_H
-
 #include <vector>
 
-class parser
+$(include)
+
+enum
+{
+    $(tokens),
+};
+
+enum
+{
+    $(nterms),
+};
+
+class $(class_name)
 {
 public:
 
-    typedef int token_value;
+    typedef $(token_type) token_type;
+    
+    $(class_name)();
+    ~$(class_name)();
+    
+    void parse( int token, const token_type& v );
 
-    enum token_kind
-    {
-    };
-    
-    enum nterm_kind
-    {
-    };
 
-    parser();
-    ~parser();
-    
-    void parse( token_kind token, const token_value& value );
-    
-    
 private:
 
-    struct action
-    {
-        int symbol;
-        int action;
-    };
-
-    struct stack_entry
-    {
-        int state;
-        std::aligned_storage< 10 > storage;
-    };
+    struct value;
+    struct piece;
+    struct stack;
     
-    struct stack_piece
-    {
-        int refcount;
-        stack_piece* previous;
-        std::vector< stack_entry > stack;
-    };
-
+    $(rule_type) $(rule_name)($(rule_param));
     
-
-
-    std::vector< stack_piece* > _heads;
+    void reduce( int rule_index );
+    
+    stack* new_stack( stack* prev, int state );
+    void delete_stack( stack* s );
+    
+    stack _anchor;
 
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif
 

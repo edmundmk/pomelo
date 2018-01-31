@@ -25,9 +25,9 @@ struct options
     std::string source;
     bool syntax;
     bool graph;
-    bool graph_rgoto;
+    bool rgoto;
     bool actions;
-    bool resolved_conflicts;
+    bool conflicts;
 
 };
 

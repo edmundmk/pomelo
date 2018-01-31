@@ -14,9 +14,9 @@
 options::options()
     :   syntax( false )
     ,   graph( false )
-    ,   graph_rgoto( false )
+    ,   rgoto( false )
     ,   actions( false )
-    ,   resolved_conflicts( false )
+    ,   conflicts( false )
 {
 }
 
@@ -41,18 +41,18 @@ bool options::parse( int argc, const char* argv[] )
         {
             graph = true;
         }
-        else if ( strcmp( arg, "--graph-rgoto" ) == 0 )
+        else if ( strcmp( arg, "--rgoto" ) == 0 )
         {
             graph = true;
-            graph_rgoto = true;
+            rgoto = true;
         }
         else if ( strcmp( arg, "--actions" ) == 0 )
         {
             actions = true;
         }
-        else if ( strcmp( arg, "--resolved-conflicts" ) == 0 )
+        else if ( strcmp( arg, "--conflicts" ) == 0 )
         {
-            resolved_conflicts = true;
+            conflicts = true;
         }
         else
         {

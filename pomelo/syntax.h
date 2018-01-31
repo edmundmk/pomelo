@@ -51,6 +51,7 @@ struct location
     symbol*         symbol;
     token           stoken;
     token           sparam;
+    bool            conflicts;
 };
 
 struct syntax
@@ -69,6 +70,7 @@ struct syntax
     nonterminal* start;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;
+    std::vector< rule_ptr > rules;
     std::vector< location > locations;
 };
 
@@ -94,7 +96,7 @@ struct nonterminal : public symbol
     explicit nonterminal( token name );
 
     std::string     type;
-    std::vector< rule_ptr > rules;
+    std::vector< rule* > rules;
     bool            defined;
     bool            erasable;
 };
@@ -109,6 +111,8 @@ struct rule
     terminal*       precedence;
     token           precetoken;
     std::string     action;
+    int             index;
+    bool            conflicts;
     bool            reachable;
 };
 

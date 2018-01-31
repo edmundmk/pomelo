@@ -31,6 +31,7 @@ automata::automata( syntax_ptr syntax )
     ,   start( nullptr )
     ,   accept( nullptr )
     ,   visited( 0 )
+    ,   state_count( -1 )
     ,   has_distances( false )
 {
 }
@@ -184,17 +185,20 @@ state::state( closure_ptr&& closure )
     ,   visited( 0 )
     ,   start_distance( INT_MAX )
     ,   accept_distance( INT_MAX )
+    ,   index( -1 )
     ,   has_conflict( false )
+    ,   reachable( false )
 {
 }
 
 
-transition::transition( state* prev, state* next, ::symbol* nsym, ::token token )
+transition::transition( state* prev, state* next, ::symbol* nsym, ::token token, bool conflicts )
     :   prev( prev )
     ,   next( next )
     ,   symbol( nsym )
     ,   visited( 0 )
     ,   token( token )
+    ,   conflicts( conflicts )
 {
 }
 

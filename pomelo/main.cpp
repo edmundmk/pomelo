@@ -45,7 +45,7 @@ int main( int argc, const char* argv[] )
     
     if ( options.graph )
     {
-        automata->print( options.graph_rgoto );
+        automata->print( options.rgoto );
     }
     
     if ( errors->has_error() )
@@ -53,8 +53,8 @@ int main( int argc, const char* argv[] )
         return EXIT_FAILURE;
     }
     
-    actions_ptr actions = std::make_shared< ::actions >( errors, automata );
-    actions->analyze( options.resolved_conflicts );
+    actions_ptr actions = std::make_shared< ::actions >( errors, automata, options.conflicts );
+    actions->analyze();
     
     if ( options.actions )
     {
@@ -67,6 +67,27 @@ int main( int argc, const char* argv[] )
     {
         return EXIT_FAILURE;
     }
+    
+    action_table_ptr action_table = actions->build_action_table();
+    goto_table_ptr goto_table = actions->build_goto_table();
+    
+    printf
+    (
+        "ACTS : %dx%d %d (%d)\n",
+        action_table->token_count,
+        action_table->state_count,
+        action_table->token_count * action_table->state_count,
+        action_table->max_conflict
+    );
+    
+    printf
+    (
+        "GOTO : %dx%d %d (%d)\n",
+        goto_table->nterm_count,
+        goto_table->state_count,
+        goto_table->nterm_count * goto_table->state_count,
+        goto_table->max_state
+    );
     
     return EXIT_SUCCESS;
 }

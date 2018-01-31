@@ -17,7 +17,11 @@
 
 
 class actions;
+struct action_table;
+struct goto_table;
 typedef std::shared_ptr< actions > actions_ptr;
+typedef std::shared_ptr< action_table > action_table_ptr;
+typedef std::shared_ptr< goto_table > goto_table_ptr;
 
 
 
@@ -26,43 +30,41 @@ typedef std::shared_ptr< actions > actions_ptr;
     the action - error, shift, reduce, or conflict - to perform.
 */
 
-struct action_conflict
-{
-    std::vector< int > actions;
-};
-
 struct action_table
 {
-    int max_shift;      // 0 <= n < max_shift -> shift terminal n
-    int max_reduce;     // max_shift <= n < max_reduce -> reduce rule n - max_shift
-    int max_conflict;   // max_reduce <= n < max_conflict -> conflict n
-    int error;          // n == error -> error
+    static const int ERROR  = -1;
+    static const int ACCEPT = -2;
 
-    int terminal_count;
+    int max_state;      // 0 <= n < max_state -> shift to state n
+    int max_reduce;     // max_state <= n < max_reduce -> reduce rule n - max_state
+    int max_conflict;   // max_reduce <= n < max_conflict -> conflict n - max_reduce
+
+    std::vector< rule* > rules;
+    std::vector< int > conflicts;
+    
+    int token_count;
     int state_count;
 
-    std::vector< terminal* > terminals;
-    std::vector< rule* > rules;
-    std::vector< action_conflict > conflicts;
     std::vector< int > actions;
-
-    int& lookup( int state, int terminal );
 };
 
 
 /*
-    The goto table indicates which state to transition to after a nonterminal
-    is reduced.  It maps ( state, nonterminal ) to the new state.
+    The goto table indicates which state to transition to after a nonterminal is
+    reduced.  It maps ( state, nonterminal ) to the new state.
 */
 
 struct goto_table
 {
-    int nonterminal_count;
+    static const int ERROR = -1;
+
+    int token_count;    // table is looked up with nonterminal index - token_count
+    int max_state;      // 0 <= n < max_state -> goto state n
+
+    int nterm_count;
     int state_count;
     
     std::vector< int > gotos;
-    
-    int& lookup( int state, int nonterminal );
 };
 
 
@@ -75,19 +77,26 @@ class actions
 {
 public:
 
-    actions( errors_ptr errors, automata_ptr automata );
+    actions( errors_ptr errors, automata_ptr automata, bool expected_info );
     actions();
     
-    void analyze( bool report_resolved_conflicts );
+    void analyze();
+    action_table_ptr build_action_table();
+    goto_table_ptr build_goto_table();
     void report_conflicts();
     void print();
 
 
 private:
 
-    void build_actions( state* s, bool report_resolved_conflicts );
+    void build_actions( state* s );
     int rule_precedence( rule* r );
     srcloc rule_location( rule* r );
+    
+    void traverse_rules( state* s );
+    void traverse_reduce( state* s, reduction* reduce );
+    
+    int conflict_actval( action_table* table, conflict* conflict );
     
     void report_conflicts( state* s );
     bool similar_conflict( conflict* a, conflict* b );
@@ -95,6 +104,7 @@ private:
 
     errors_ptr _errors;
     automata_ptr _automata;
+    bool _expected_info;
 
 };
 

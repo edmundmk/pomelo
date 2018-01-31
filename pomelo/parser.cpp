@@ -82,7 +82,9 @@ void parser::parse( const char* path )
         _syntax->locations.push_back( { rule.get(), eof.get(), eof->name, NULL_TOKEN } );
         _syntax->locations.push_back( { rule.get(), nullptr, NULL_TOKEN, NULL_TOKEN } );
         
-        start->rules.push_back( std::move( rule ) );
+        start->rules.push_back( rule.get() );
+        _syntax->rules.push_back( std::move( rule ) );
+        
         _syntax->start = start.get();
         _syntax->terminals.emplace( eof->name, std::move( eof ) );
         _syntax->nonterminals.emplace( start->name, std::move( start ) );
@@ -275,7 +277,7 @@ void parser::parse_nonterminal()
     next();
     while ( true )
     {
-        if ( _lexed == TOKEN || _lexed == '.' )
+        if ( _lexed == '!' || _lexed == TOKEN || _lexed == '.' )
         {
             parse_rule( nonterminal );
         }
@@ -306,10 +308,17 @@ void parser::parse_rule( nonterminal* nonterminal )
 
     while ( true )
     {
+        bool conflicts = false;
+        if ( _lexed == '!' )
+        {
+            conflicts = true;
+            next();
+        }
+    
         if ( _lexed == TOKEN )
         {
             symbol* symbol = declare_symbol( _token );
-            location l = { rule.get(), symbol, _token, NULL_TOKEN };
+            location l = { rule.get(), symbol, _token, NULL_TOKEN, conflicts };
             
             if ( l.symbol->is_terminal && ! rule->precedence )
             {
@@ -346,9 +355,10 @@ void parser::parse_rule( nonterminal* nonterminal )
         }
         else if ( _lexed == '.' )
         {
-            location l = { rule.get(), nullptr, _token, NULL_TOKEN };
+            location l = { rule.get(), nullptr, _token, NULL_TOKEN, false };
             _syntax->locations.push_back( l );
             rule->locount += 1;
+            rule->conflicts = conflicts;
 
             next();
             break;
@@ -394,7 +404,8 @@ void parser::parse_rule( nonterminal* nonterminal )
         next();
     }
 
-    nonterminal->rules.push_back( std::move( rule ) );
+    nonterminal->rules.push_back( rule.get() );
+    _syntax->rules.push_back( std::move( rule ) );
 }
 
 

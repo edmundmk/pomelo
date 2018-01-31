@@ -11,7 +11,6 @@
 #include "lalr1.h"
 
 
-
 /*
     Wrapper for closure pointers so they can be unordered_map keys.
 */
@@ -118,9 +117,9 @@ automata_ptr lalr1::construct()
 
             // A nonterminal is erasable if there is at least one rule
             // consisting only of erasable symbols.
-            for ( const auto& rule : nsym->rules )
+            for ( rule* rule : nsym->rules )
             {
-                if ( erasable_rule( rule.get() ) )
+                if ( erasable_rule( rule ) )
                 {
                     nsym->erasable = true;
                     changed = true;
@@ -131,7 +130,7 @@ automata_ptr lalr1::construct()
     }
 
     // Construct initial state.
-    for ( const auto& rule : _automata->syntax->start->rules )
+    for ( rule* rule : _automata->syntax->start->rules )
     {
         add_location( rule->lostart );
     }
@@ -204,7 +203,7 @@ void lalr1::add_location( size_t locindex )
     if ( l.symbol && ! l.symbol->is_terminal )
     {
         nonterminal* nsym = (nonterminal*)l.symbol;
-        for ( const auto& rule : nsym->rules )
+        for ( rule* rule : nsym->rules )
         {
             add_location( rule->lostart );
         }
@@ -223,6 +222,7 @@ void lalr1::add_transitions( state* pstate )
         size_t iloc = pstate->closure->locations[ i ];
         const location& l = _automata->syntax->locations.at( iloc );
         symbol* nsym = l.symbol;
+        bool conflicts = l.conflicts;
         
         // If the next symbol is null the following locations all reduce.
         if ( ! nsym )
@@ -248,12 +248,17 @@ void lalr1::add_transitions( state* pstate )
                 add_location( iloc + 1 );
             }
             
+            if ( ! l.conflicts )
+            {
+                conflicts = false;
+            }
+            
             ++i;
         }
         
         // Close state.
         state* nstate = close_state();
-        transition_ptr trans = std::make_unique< transition >( pstate, nstate, nsym, l.stoken );
+        transition_ptr trans = std::make_unique< transition >( pstate, nstate, nsym, l.stoken, conflicts );
         pstate->next.push_back( trans.get() );
         nstate->prev.push_back( trans.get() );
         _automata->transitions.push_back( std::move( trans ) );
@@ -336,7 +341,7 @@ void lalr1::add_reducefroms( transition* nonterm )
     nonterminal* nsym = (nonterminal*)nonterm->symbol;
 
     // Follow each rule to find the reduction transition.
-    for ( const auto& rule : nsym->rules )
+    for ( rule* rule : nsym->rules )
     {
         transition* fsymbol = nullptr;
         state* state = nonterm->prev;
@@ -361,7 +366,7 @@ void lalr1::add_reducefroms( transition* nonterm )
         // Add lookback from the final transition to the nonterminal one.
         if ( fsymbol )
         {
-            reducefrom_ptr rfrom = std::make_unique< reducefrom >( rule.get(), nonterm, fsymbol );
+            reducefrom_ptr rfrom = std::make_unique< reducefrom >( rule, nonterm, fsymbol );
             nonterm->rfrom.push_back( rfrom.get() );
             fsymbol->rgoto.push_back( rfrom.get() );
             _automata->reducefrom.push_back( std::move( rfrom ) );

@@ -55,12 +55,16 @@ void syntax::print()
             nsym->type.c_str()
         );
         
-        for ( const auto& rule : nsym->rules )
+        for ( rule* rule : nsym->rules )
         {
             printf( "    " );
             for ( size_t i = 0; i < rule->locount; ++i )
             {
                 const location& l = locations[ rule->lostart + i ];
+                if ( l.conflicts )
+                {
+                    printf( "! " );
+                }
                 if ( l.symbol )
                 {
                     printf( "%s", source->text( l.symbol->name ) );
@@ -71,6 +75,10 @@ void syntax::print()
                 }
                 else
                 {
+                    if ( rule->conflicts )
+                    {
+                        printf( "! " );
+                    }
                     printf( "." );
                 }
                 printf( " " );
@@ -124,6 +132,8 @@ rule::rule( ::nonterminal* nonterminal )
     ,   locount( 0 )
     ,   precedence( nullptr )
     ,   precetoken( NULL_TOKEN )
+    ,   index( -1 )
+    ,   conflicts( false )
     ,   reachable( false )
 {
 }

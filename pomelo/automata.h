@@ -78,6 +78,7 @@ struct automata
     std::vector< reduction_ptr > reductions;
     std::vector< conflict_ptr > conflicts;
     uintptr_t visited;
+    int state_count;
     bool has_distances;
 };
 
@@ -116,12 +117,14 @@ struct state
     uintptr_t visited;
     int start_distance;
     int accept_distance;
+    int index;
     bool has_conflict;
+    bool reachable;
 };
 
 struct transition
 {
-    transition( state* prev, state* next, symbol* nsym, token token );
+    transition( state* prev, state* next, symbol* nsym, token token, bool conflicts );
 
     state* prev;
     state* next;
@@ -130,6 +133,7 @@ struct transition
     std::vector< reducefrom* > rfrom; // links to reachable final transitions.
     std::vector< reducefrom* > rgoto; // link from final transition to nonterminal.
     uintptr_t visited;
+    bool conflicts;
 };
 
 
