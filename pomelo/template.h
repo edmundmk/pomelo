@@ -13,12 +13,12 @@ $(include)
 
 enum
 {
-    $(tokens),
+    $(token_name) = $(token_value),
 };
 
 enum
 {
-    $(nterms),
+    $(nterm_name) = $(nterm_value),
 };
 
 class $(class_name)
@@ -42,9 +42,10 @@ private:
     
     $(rule_type) $(rule_name)($(rule_param));
     
-    void reduce( int rule_index );
+    void reduce( stack* s, int rule );
+    void error( int token, const token_type& v );
     
-    stack* new_stack( stack* prev, int state );
+    stack* new_stack( stack* list, piece* prev, int state );
     void delete_stack( stack* s );
     
     user_value u;

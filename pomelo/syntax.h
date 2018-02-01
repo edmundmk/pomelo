@@ -63,10 +63,12 @@ struct syntax
 
     source_ptr source;
     directive include;
+    directive user_value;
     directive class_name;
     directive token_type;
     directive token_prefix;
     directive nterm_prefix;
+    directive error_report;
     nonterminal* start;
     std::unordered_map< token, terminal_ptr > terminals;
     std::unordered_map< token, nonterminal_ptr > nonterminals;

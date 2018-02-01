@@ -77,7 +77,7 @@ int main( int argc, const char* argv[] )
         action_table->token_count,
         action_table->state_count,
         action_table->token_count * action_table->state_count,
-        action_table->max_conflict
+        action_table->accept_action
     );
     
     printf
@@ -86,7 +86,7 @@ int main( int argc, const char* argv[] )
         goto_table->nterm_count,
         goto_table->state_count,
         goto_table->nterm_count * goto_table->state_count,
-        goto_table->max_state
+        goto_table->state_count
     );
     
     return EXIT_SUCCESS;

@@ -12,11 +12,6 @@
 #include "search.h"
 
 
-const int action_table::ERROR;
-const int action_table::ACCEPT;
-const int goto_table::ERROR;
-
-
 
 actions::actions( errors_ptr errors, automata_ptr automata, bool expected_info )
     :   _errors( errors )
@@ -59,6 +54,8 @@ void actions::analyze()
         }
     }
     
+    _automata->rule_count = index;
+    
     // Assign state indices.
     index = 0;
     for ( const auto& state : _automata->states )
@@ -78,6 +75,8 @@ action_table_ptr actions::build_action_table()
     action_table_ptr table = std::make_shared< action_table >();
     
     // Table dimensions.
+    table->rule_count = _automata->rule_count;
+    table->conflict_count = -1;
     table->token_count = (int)_automata->syntax->terminals.size();
     table->state_count = _automata->state_count;
     
@@ -91,9 +90,6 @@ action_table_ptr actions::build_action_table()
         table->rules.push_back( rule.get() );
     }
     
-    table->max_state = table->state_count;
-    table->max_reduce = table->max_state + (int)table->rules.size();
-    
     // Construct table state by state.
     for ( const auto& state : _automata->states )
     {
@@ -106,29 +102,36 @@ action_table_ptr actions::build_action_table()
         (
             table->actions.end(),
             table->token_count,
-            action_table::ERROR
+            -1
         );
         
         assert( state->actions.size() == table->token_count );
         for ( size_t i = 0; i < state->actions.size(); ++i )
         {
             const action& action = state->actions.at( i );
-            int actval = action_table::ERROR;
+            int actval = -1;
 
             switch ( action.kind )
             {
             case ACTION_ERROR:
-                actval = action_table::ERROR;
+                actval = -1;
                 break;
             
             case ACTION_SHIFT:
-                assert( action.shift->next->index != -1 );
-                actval = action.shift->next->index;
+                if ( action.shift->next != _automata->accept )
+                {
+                    assert( action.shift->next->index != -1 );
+                    actval = action.shift->next->index;
+                }
+                else
+                {
+                    actval = -2;
+                }
                 break;
             
             case ACTION_REDUCE:
                 assert( action.reduce->rule->index != -1 );
-                actval = table->max_state + action.reduce->rule->index;
+                actval = table->state_count + action.reduce->rule->index;
                 break;
             
             case ACTION_CONFLICT:
@@ -140,7 +143,25 @@ action_table_ptr actions::build_action_table()
         }
     }
     
-    table->max_conflict = table->max_reduce + (int)table->conflicts.size();
+    // Work out remaining action numbers.
+    table->conflict_count = (int)table->conflicts.size();
+    table->error_action = table->state_count + table->rule_count + table->conflict_count;
+    table->accept_action = table->error_action + 1;
+    
+    // Reset special actions now we know what to call them.
+    for ( size_t i = 0; i < table->actions.size(); ++i )
+    {
+        int action = table->actions.at( i );
+        if ( action == -1 )
+        {
+            table->actions[ i ] = table->error_action;
+        }
+        else if ( action == -2 )
+        {
+            table->actions[ i ] = table->accept_action;
+        }
+    }
+    
     return table;
 }
 
@@ -151,11 +172,9 @@ goto_table_ptr actions::build_goto_table()
     goto_table_ptr table = std::make_shared< goto_table >();
     
     // Table dimensions.
+    table->token_count = (int)_automata->syntax->terminals.size();
     table->nterm_count = (int)_automata->syntax->nonterminals.size();
     table->state_count = _automata->state_count;
-
-    table->token_count = (int)_automata->syntax->terminals.size();
-    table->max_state = table->state_count;
     
     // Construct table state by state.
     for ( const auto& state : _automata->states )
@@ -169,7 +188,7 @@ goto_table_ptr actions::build_goto_table()
         (
             table->gotos.end(),
             table->nterm_count,
-            goto_table::ERROR
+            table->state_count
         );
         
         for ( transition* trans : state->next )
@@ -621,7 +640,7 @@ int actions::conflict_actval( action_table* table, conflict* conflict )
     for ( reduction* reduce : conflict->reduce )
     {
         assert( reduce->rule->index != -1 );
-        action[ i++ ] = table->max_state + reduce->rule->index;
+        action[ i++ ] = table->state_count + reduce->rule->index;
     }
     
     // Check if it already exists.
@@ -642,7 +661,7 @@ int actions::conflict_actval( action_table* table, conflict* conflict )
         
         if ( equal )
         {
-            return table->max_reduce + index;
+            return table->state_count + table->rule_count + index;
         }
         
         index += othact[ 0 ];
@@ -650,7 +669,7 @@ int actions::conflict_actval( action_table* table, conflict* conflict )
     
     // No, it doesn't.
     table->conflicts.insert( table->conflicts.end(), action, action + size );
-    return table->max_reduce + index;
+    return table->state_count + table->rule_count + index;
 }
 
 

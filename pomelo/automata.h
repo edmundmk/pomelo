@@ -78,6 +78,7 @@ struct automata
     std::vector< reduction_ptr > reductions;
     std::vector< conflict_ptr > conflicts;
     uintptr_t visited;
+    int rule_count;
     int state_count;
     bool has_distances;
 };

@@ -32,13 +32,12 @@ typedef std::shared_ptr< goto_table > goto_table_ptr;
 
 struct action_table
 {
-    static const int ERROR  = -1;
-    static const int ACCEPT = -2;
+    int error_action;   // error action
+    int accept_action;  // accept action
 
-    int max_state;      // 0 <= n < max_state -> shift to state n
-    int max_reduce;     // max_state <= n < max_reduce -> reduce rule n - max_state
-    int max_conflict;   // max_reduce <= n < max_conflict -> conflict n - max_reduce
-
+    int rule_count;     // max_state <= n < max_reduce -> reduce rule n - max_state
+    int conflict_count; // max_reduce <= n < max_conflict -> conflict n - max_reduce
+    
     std::vector< rule* > rules;
     std::vector< int > conflicts;
     
@@ -56,11 +55,7 @@ struct action_table
 
 struct goto_table
 {
-    static const int ERROR = -1;
-
     int token_count;    // table is looked up with nonterminal index - token_count
-    int max_state;      // 0 <= n < max_state -> goto state n
-
     int nterm_count;
     int state_count;
     

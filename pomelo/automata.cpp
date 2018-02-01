@@ -31,6 +31,7 @@ automata::automata( syntax_ptr syntax )
     ,   start( nullptr )
     ,   accept( nullptr )
     ,   visited( 0 )
+    ,   rule_count( -1 )
     ,   state_count( -1 )
     ,   has_distances( false )
 {

@@ -162,6 +162,10 @@ void parser::parse_directive()
     {
         directive = &_syntax->include;
     }
+    else if ( strcmp( text, "user_value" ) == 0 )
+    {
+        directive = &_syntax->user_value;
+    }
     else if ( strcmp( text, "class_name" ) == 0 )
     {
         directive = &_syntax->class_name;
@@ -177,6 +181,10 @@ void parser::parse_directive()
     else if ( strcmp( text, "nterm_prefix" ) == 0 )
     {
         directive = &_syntax->nterm_prefix;
+    }
+    else if ( strcmp( text, "error_report" ) == 0 )
+    {
+        directive = &_syntax->error_report;
     }
     else if ( strcmp( text, "left" ) == 0 )
     {
