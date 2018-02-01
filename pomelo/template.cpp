@@ -19,28 +19,28 @@ const int ACCEPT = -2;
     Parsing tables.
 */
 
-const int START_STATE       = $(start_state);
+const int START_STATE      = $(start_state);
 
-const int STATE_COUNT       = $(state_count);
-const int RULE_COUNT        = $(rule_count);
-const int CONFLICT_COUNT    = $(conflict_count);
+const int STATE_COUNT      = $(state_count);
+const int RULE_COUNT       = $(rule_count);
+const int CONFLICT_COUNT   = $(conflict_count);
 
-const short ACTION[] =
+const unsigned short ACTION[] =
 {
     $(action_table)
 };
 
-const short CONFLICT[] =
+const unsigned short CONFLICT[] =
 {
     $(conflict_table)
 };
 
-const short GOTO[] =
+const unsigned short GOTO[] =
 {
     $(goto_table)
 };
 
-const short LENGTH[] =
+const unsigned short LENGTH[] =
 {
     $(rule_length)
 };
@@ -131,8 +131,9 @@ struct $(class_name)::stack
     Implementation of the parser.
 */
 
-$(class_name)::$(class_name)()
-    :   _anchor{ -1, nullptr, nullptr }
+$(class_name)::$(class_name)( const user_value& u )
+    :   u( u )
+    ,   _anchor{ -1, nullptr, nullptr }
 {
     new_stack( &_anchor, START_STATE );
 }
@@ -145,45 +146,102 @@ $(class_name)::~$(class_name)()
     }
 }
 
-void $(class_name)::parse( int token, token_type&& v )
+void $(class_name)::parse( int token, const token_type& v )
 {
     // Evaluate for each active parse stack.
-    for ( stack* next, stack = _anchor.next; next = stack->next, stack; stack = next )
+    for ( stack* s = _anchor.next; s; s = s->next )
     {
-        piece* p = stack->piece;
-
+        assert( s->state >= 0 );
+    
         // Loop until this parse fails or we manage to shift the token.
         while ( true )
         {
             // Look up action.
-            int action = ACTION[ stack->state * STATE_COUNT + token ];
+            int action = ACTION[ s->state * STATE_COUNT + token ];
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
-                p->values.push_back( value( v ) );
+                s->piece->values.push_back( value( v ) );
+                s->state = action;
                 break;
             }
             else if ( action < STATE_COUNT + RULE_COUNT )
             {
                 // Reduce using the rule.
-                reduce( action - STATE_COUNT );
-                continue;
+                reduce( s, action - STATE_COUNT );
+
+                // Continue around while loop until we do something other
+                // than a reduction (a reduction does not consume the token).
             }
             else if ( action < STATE_COUNT + RULE_COUNT + CONFLICT_COUNT )
             {
-                // Perform all actions in the conflict.
-                short* conflict = CONFLICT + action - STATE_COUNT - RULE_COUNT;
+                // We reuse the current stack for the last action in the
+                // conflict.  We continue from the first non-shift stack.
+                stack* prev = s->prev;
+                stack* z = prev;
+
+                // Get list of actions in the conflict.
+                const auto* conflict = CONFLICT + action - STATE_COUNT - RULE_COUNT;
+                int size = conflict[ 0 ];
+                assert( size >= 2 );
                 
-            
-            
+                // Only the first action may be a shift
+                if ( conflict[ 1 ] < STATE_COUNT )
+                {
+                    // Create a new stack.
+                    z = new_stack( z, s->state );
+                    
+                    // Shift and move to the state encoded in the action.
+                    int action = conflict[ 1 ];
+                    z->piece->values.push_back( value( v ) );
+                    z->state = action;
+                    
+                    // Ignore this stack until the next token.
+                    prev = z;
+                }
+                
+                // Other actions must be reductions.
+                for ( int i = 1; i < size; ++i )
+                {
+                    // Create stack for this reduction, or reuse original.
+                    if ( i < size - 1 )
+                        z = new_stack( z, s->state );
+                    else
+                        z = s;
+                
+                    // Reduce using the rule.
+                    int action = conflict[ i ];
+                    assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
+                    reduce( z, action - STATE_COUNT );
+                    
+                    // If this is the first reduction, then we continue around
+                    // the while loop until we do something other than a
+                    // reduction (see below).  Otherwise this stack will be
+                    // picked up on the next iteration of the main for loop,
+                    // and the token consumed that way.
+                }
+                
+                // Continue with the while loop using the first stack
+                // resulting from a reduction.
+                s = prev;
             }
             else if ( action == ERROR )
             {
-                // TODO.
+                // If this is not the only stack, then destroy the stack.
+                if ( s->next == &_anchor && s->prev == &_anchor )
+                {
+                    delete_stack( ( s = s->prev )->next );
+                    break;
+                }
+                
+                // Otherwise report the error.
+                
+                
             }
             else if ( action == ACCEPT )
             {
-                // TODO.
+                // Everything is fine, clean up by destroying the stack.
+                delete_stack( ( s = s->prev )->next );
             }
         }
     }

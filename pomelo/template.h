@@ -25,9 +25,10 @@ class $(class_name)
 {
 public:
 
+    typedef $(user_value) user_value;
     typedef $(token_type) token_type;
     
-    $(class_name)();
+    explicit $(class_name)( const user_value& u );
     ~$(class_name)();
     
     void parse( int token, const token_type& v );
@@ -46,6 +47,7 @@ private:
     stack* new_stack( stack* prev, int state );
     void delete_stack( stack* s );
     
+    user_value u;
     stack _anchor;
 
 };
