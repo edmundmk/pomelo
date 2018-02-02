@@ -62,6 +62,12 @@ void write::prepare()
     {
         _tokens.push_back( tsym.second.get() );
     }
+    std::sort
+    (
+        _tokens.begin(),
+        _tokens.end(),
+        []( terminal* a, terminal* b ) { return a->value < b->value; }
+    );
 
     // Build in-order list of nonterminals.
     for ( const auto& nsym : _automata->syntax->nonterminals )
@@ -201,6 +207,10 @@ bool write::write_template( FILE* f, char* source, size_t length )
             {
                 for ( terminal* token : _tokens )
                 {
+                    if ( token->is_special )
+                    {
+                        continue;
+                    }
                     output += replace( replace( line, token ) );
                 }
             }
@@ -208,6 +218,10 @@ bool write::write_template( FILE* f, char* source, size_t length )
             {
                 for ( nonterminal* nterm : _nterms )
                 {
+                    if ( nterm->is_special )
+                    {
+                        continue;
+                    }
                     output += replace( replace( line, nterm ) );
                 }
             }
@@ -332,7 +346,12 @@ std::string write::replace( std::string line )
         }
         else if ( valname == "$(class_name)" )
         {
-            r.replace( trim( syntax->class_name.text ) );
+            std::string name = trim( syntax->class_name.text );
+            if ( name.empty() )
+            {
+                name = "parser";
+            }
+            r.replace( name );
         }
         else if ( valname == "$(user_value)" )
         {
@@ -506,6 +525,7 @@ std::string write::replace( std::string line, rule* rule )
         $$(rule_args)
     */
 
+    syntax_ptr syntax = _automata->syntax;
     replacer r( line, "$$(" );
     std::string_view valname;
     while ( r.next( valname ) )
@@ -520,11 +540,49 @@ std::string write::replace( std::string line, rule* rule )
         }
         else if ( valname == "$$(rule_param)" )
         {
-            r.replace( "/* rule_param */" );
+            std::string prm;
+            for ( int i = 0; i < rule->locount - 1; ++i )
+            {
+                size_t iloc = rule->lostart + i;
+                const location& loc = syntax->locations.at( iloc );
+                if ( ! loc.sparam )
+                {
+                    continue;
+                }
+
+                if ( prm.size() )
+                {
+                    prm += ",";
+                }
+                if ( loc.symbol->is_terminal )
+                {
+                    prm += " token_type&&";
+                }
+                else
+                {
+                    prm += " ";
+                    nonterminal* nterm = (nonterminal*)loc.symbol;
+                    prm += _nterm_lookup.at( nterm )->ntype;
+                    prm += "&&";
+                }
+                prm += " ";
+                prm += syntax->source->text( loc.sparam );
+            }
+            if ( prm.size() )
+            {
+                prm += " ";
+            }
+
+            r.replace( prm );
         }
         else if ( valname == "$$(rule_body)" )
         {
-            r.replace( trim( rule->action ) );
+            std::string body = trim( rule->action );
+            if ( body.empty() )
+            {
+                body = "return {};";
+            }
+            r.replace( body );
         }
         else if ( valname == "$$(rule_index)" )
         {
@@ -543,7 +601,30 @@ std::string write::replace( std::string line, rule* rule )
         }
         else if ( valname == "$$(rule_args)" )
         {
-            r.replace( "/* rule args */" );
+            std::string args;
+            for ( int i = 0; i < rule->locount - 1; ++i )
+            {
+                size_t iloc = rule->lostart + i;
+                const location& loc = syntax->locations.at( iloc );
+                if ( ! loc.sparam )
+                {
+                    continue;
+                }
+
+                if ( args.size() )
+                {
+                    args += ",";
+                }
+                args += " p[ ";
+                args += std::to_string( i );
+                args += " ].move()";
+            }
+            if ( args.size() )
+            {
+                args += " ";
+            }
+        
+            r.replace( args );
         }
         else
         {
@@ -586,7 +667,7 @@ std::string write::write_rule_table()
     for ( size_t i = 0; i < _automata->syntax->rules.size(); ++i )
     {
         rule* rule = _automata->syntax->rules.at( i ).get();
-        s += "    {";
+        s += "    { ";
         s += std::to_string( rule->nonterminal->value - token_count );
         s += ", ";
         s += std::to_string( (int)rule->locount - 1 );

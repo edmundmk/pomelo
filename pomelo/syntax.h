@@ -81,7 +81,8 @@ struct symbol
     symbol( token name, bool is_terminal );
 
     token           name;
-    int             value           : ( sizeof( int ) * CHAR_BIT ) - 1;
+    int             value           : ( sizeof( int ) * CHAR_BIT ) - 2;
+    int             is_special      : 1;
     int             is_terminal     : 1;
 };
 

@@ -107,6 +107,7 @@ void syntax::print()
 symbol::symbol( token name, bool is_terminal )
     :   name( name )
     ,   value( -1 )
+    ,   is_special( false )
     ,   is_terminal( is_terminal )
 {
 }

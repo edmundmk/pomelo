@@ -69,10 +69,12 @@ void parser::parse( const char* path )
         // Start symbol is special.
         token start_token = _syntax->source->new_token( 0, "@start" );
         nonterminal_ptr start = std::make_unique< nonterminal >( start_token );
+        start->is_special   = true;
         start->type         = _syntax->start->type;
         
         token eof_token = _syntax->source->new_token( 0, "$" );
         terminal_ptr eof = std::make_unique< terminal >( eof_token );
+        eof->is_special     = true;
         
         rule_ptr rule = std::make_unique< ::rule >( start.get() );
         rule->lostart       = _syntax->locations.size();
