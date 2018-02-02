@@ -14,6 +14,7 @@
 		DB6564ED1FDF28A000F6AAF8 /* token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EB1FDF28A000F6AAF8 /* token.cpp */; };
 		DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564EF1FDF310E00F6AAF8 /* parser.cpp */; };
 		DB6564F71FDF3E9D00F6AAF8 /* errors.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */; };
+		DB93C1022024E66E006992E2 /* write.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB93C1002024E66E006992E2 /* write.cpp */; };
 		DBDC9D72201DE26D005153CE /* actions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D70201DE26D005153CE /* actions.cpp */; };
 		DBDC9D75201DE68D005153CE /* options.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D73201DE68D005153CE /* options.cpp */; };
 		DBDC9D7E201FBAD2005153CE /* search.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D7C201FBAD2005153CE /* search.cpp */; };
@@ -48,6 +49,9 @@
 		DB6564F51FDF3E9D00F6AAF8 /* errors.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = errors.cpp; sourceTree = "<group>"; };
 		DB6564F61FDF3E9D00F6AAF8 /* errors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = errors.h; sourceTree = "<group>"; };
 		DB93C0FC202262CA006992E2 /* template.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = template.cpp; sourceTree = "<group>"; };
+		DB93C0FE2024E586006992E2 /* template.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = template.inc; sourceTree = "<group>"; };
+		DB93C1002024E66E006992E2 /* write.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = write.cpp; sourceTree = "<group>"; };
+		DB93C1012024E66E006992E2 /* write.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = write.h; sourceTree = "<group>"; };
 		DBDC9D70201DE26D005153CE /* actions.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = actions.cpp; sourceTree = "<group>"; };
 		DBDC9D71201DE26D005153CE /* actions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = actions.h; sourceTree = "<group>"; };
 		DBDC9D73201DE68D005153CE /* options.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = options.cpp; sourceTree = "<group>"; };
@@ -109,6 +113,9 @@
 				DB6564EC1FDF28A000F6AAF8 /* token.h */,
 				DB93C0FC202262CA006992E2 /* template.cpp */,
 				DBDC9D76201E51EF005153CE /* template.h */,
+				DB93C0FE2024E586006992E2 /* template.inc */,
+				DB93C1002024E66E006992E2 /* write.cpp */,
+				DB93C1012024E66E006992E2 /* write.h */,
 			);
 			path = pomelo;
 			sourceTree = "<group>";
@@ -120,6 +127,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = DB3070DD1FDCA6A000AACBDC /* Build configuration list for PBXNativeTarget "pomelo" */;
 			buildPhases = (
+				DB93C0FD2024E43F006992E2 /* ShellScript */,
 				DB3070D21FDCA6A000AACBDC /* Sources */,
 				DB3070D31FDCA6A000AACBDC /* Frameworks */,
 				DB3070D41FDCA6A000AACBDC /* CopyFiles */,
@@ -165,12 +173,32 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		DB93C0FD2024E43F006992E2 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/pomelo/template.cpp",
+				"$(SRCROOT)/pomelo/template.h",
+			);
+			outputPaths = (
+				"$(SRCROOT)/pomelo/template.inc",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "pushd $(dirname $SCRIPT_INPUT_FILE_0)\nxxd -i $(basename $SCRIPT_INPUT_FILE_0) > $SCRIPT_OUTPUT_FILE_0\nxxd -i $(basename $SCRIPT_INPUT_FILE_1) >> $SCRIPT_OUTPUT_FILE_0\npopd";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		DB3070D21FDCA6A000AACBDC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				DB1019941FE6DFCA00AD9E26 /* automata.cpp in Sources */,
+				DB93C1022024E66E006992E2 /* write.cpp in Sources */,
 				DB6564F11FDF310E00F6AAF8 /* parser.cpp in Sources */,
 				DBDC9D75201DE68D005153CE /* options.cpp in Sources */,
 				DB3070DA1FDCA6A000AACBDC /* main.cpp in Sources */,

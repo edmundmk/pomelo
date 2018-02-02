@@ -29,27 +29,32 @@ const int CONFLICT_COUNT   = $(conflict_count);
 
 const unsigned short ACTION[] =
 {
-    $(action_table)
+$(action_table)
 };
 
 const unsigned short CONFLICT[] =
 {
-    $(conflict_table)
+$(conflict_table)
 };
 
 const unsigned short GOTO[] =
 {
-    $(goto_table)
+$(goto_table)
 };
 
-const unsigned short NTERM[] =
+const struct { unsigned short nterm; unsigned short length; } RULE[] =
 {
-    $(nterm_table)
+$(rule_table)
 };
 
-const unsigned short LENGTH[] =
+
+
+/*
+    A type for productions that don't provide one.
+*/
+
+struct $(class_name)::empty
 {
-    $(rule_length)
 };
 
 
@@ -66,13 +71,13 @@ public:
     explicit value( int s )                 : _state( s ), _kind( -2 ) {}
 
     value( int s, const token_type& v )     : _state( s ), _kind( -1 ) { new ( (token_type*)_storage ) token_type( v ); }
-    value( int s, $(nterm_type)&& v )       : _state( s ), _kind( $(nterm_value) ) { new ( ($(nterm_type)*)_storage ) $(nterm_type)( std::move( v ) ); }
-    value( int s, const $(nterm_type)& v )  : _state( s ), _kind( $(nterm_value) ) { new ( ($(nterm_type)*)_storage ) $(nterm_type)( v ); }
+    value( int s, $$(ntype_type)&& v )      : _state( s ), _kind( $$(ntype_value) ) { new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( std::move( v ) ); }
+    value( int s, const $$(ntype_type)& v ) : _state( s ), _kind( $$(ntype_value) ) { new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v ); }
     
     value( value&& v )                      : _state( v._state ) { construct( std::move( v ) ); }
     value( const value& v )                 : _state( v._state ) { construct( v ); }
-    value& operator = ( value&& v )         { destroy(); _state = v._state; construct( std::move( v ) ); return *this; }
-    value& operator = ( const value& v )    { destroy(); _state = v._state; construct( v ); return *this; }
+    value& operator = ( value&& v )         { if ( &v != this ) { destroy(); _state = v._state; construct( std::move( v ) ); } return *this; }
+    value& operator = ( const value& v )    { if ( &v != this ) { destroy(); _state = v._state; construct( v ); } return *this; }
     
     ~value()                                { destroy(); }
     
@@ -89,7 +94,7 @@ private:
         switch ( kind )
         {
         case -1: new ( (token_type*)storage ) token_type( v.move< token_type >() ); break;
-        case $(nterm_value): new ( ($(nterm_type)*)storage ) $(nterm_type)( v.move< $(nterm_type) >() ); break;
+        case $$(ntype_value): new ( ($$(ntype_type)*)storage ) $$(ntype_type)( v.move< $$(ntype_type) >() ); break;
         }
     }
     
@@ -99,7 +104,7 @@ private:
         switch ( kind )
         {
         case -1: new ( (token_type*)storage ) token_type( v.get< token_type >() ); break;
-        case $(nterm_value): new ( ($(nterm_type)*)storage ) $(nterm_type)( v.get< $(nterm_type) >() ); break;
+        case $$(ntype_value): new ( ($$(ntype_type)*)storage ) $$(ntype_type)( v.get< $$(ntype_type) >() ); break;
         }
     }
     
@@ -108,7 +113,7 @@ private:
         switch ( kind )
         {
         case -1: ( (token_type*)storage )->~token_type() ); break;
-        case $(nterm_value): ( ($(nterm_type)*)storage )->~$(nterm_type)(); break;
+        case $$(ntype_value): ( ($$(ntype_type)*)storage )->~$$(ntype_type)(); break;
         }
     }
 
@@ -117,12 +122,12 @@ private:
     std::aligned_storage_t
         <
               sizeof( token_type )
-            + sizeof( $(nterm_type) )
+            + sizeof( $$(ntype_type) )
         ,
         std::max
         ({
               alignof( token_type )
-            + alignof( $(nterm_type) )
+            + alignof( $$(ntype_type) )
         })
         >
     _storage[ 1 ];
@@ -134,7 +139,7 @@ private:
     Rules.
 */
 
-$(rule_type) $(class_name)::$(rule_name)($(rule_param)) { $(rule_body) }
+$$(rule_type) $(class_name)::$$(rule_name)($$(rule_param)) { $$(rule_body) }
 
 
 
@@ -288,8 +293,10 @@ void $(class_name)::parse( int token, const token_type& v )
 
 void $(class_name)::reduce( stack* s, int rule )
 {
+    const auto& rule_info = RULE[ rule ];
+
     // Find length of rule and ensure this stack has at least that many values.
-    size_t length = LENGTH[ rule ];
+    size_t length = rule_info.length;
     assert( s->piece->refcount == 0 );
     while ( s->piece->values.size() < length )
     {
@@ -378,7 +385,7 @@ void $(class_name)::reduce( stack* s, int rule )
     // Perform rule.
     switch ( rule )
     {
-    case $(rule_index): $(rule_assign)$(rule_name)($(rule_args)) ); break;
+    case $$(rule_index): $$(rule_assign)$$(rule_name)($$(rule_args)) ); break;
     }
     
     // Remove excess elements.
@@ -386,8 +393,7 @@ void $(class_name)::reduce( stack* s, int rule )
     
     // Find state we've returned to after reduction, and goto next one.
     int state = p[ index ].state();
-    int nterm = NTERM[ rule ];
-    int gotos = GOTO[ state * NTERM_COUNT + nterm ];
+    int gotos = GOTO[ state * NTERM_COUNT + rule_info.nterm ];
     assert( gotos < STATE_COUNT );
     s->state = gotos;
 }
@@ -424,8 +430,4 @@ void $(class_name)::delete_stack( stack* s )
     s->next->prev = s->prev;
     delete s;
 }
-
-
-
-
 

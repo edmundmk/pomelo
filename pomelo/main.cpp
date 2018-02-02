@@ -14,6 +14,7 @@
 #include "parser.h"
 #include "lalr1.h"
 #include "actions.h"
+#include "write.h"
 
 
 int main( int argc, const char* argv[] )
@@ -71,23 +72,24 @@ int main( int argc, const char* argv[] )
     action_table_ptr action_table = actions->build_action_table();
     goto_table_ptr goto_table = actions->build_goto_table();
     
-    printf
-    (
-        "ACTS : %dx%d %d (%d)\n",
-        action_table->token_count,
-        action_table->state_count,
-        action_table->token_count * action_table->state_count,
-        action_table->accept_action
-    );
+    write_ptr write = std::make_shared< ::write >(
+            automata, action_table, goto_table, options.output );
+    write->prepare();
     
-    printf
-    (
-        "GOTO : %dx%d %d (%d)\n",
-        goto_table->nterm_count,
-        goto_table->state_count,
-        goto_table->nterm_count * goto_table->state_count,
-        goto_table->state_count
-    );
+    bool ok = true;
+    if ( options.output.size() )
+    {
+    }
+    else
+    {
+        ok = ok && write->write_header( stdout );
+        ok = ok && write->write_source( stdout );
+    }
+    
+    if ( ! ok )
+    {
+        return EXIT_FAILURE;
+    }
     
     return EXIT_SUCCESS;
 }

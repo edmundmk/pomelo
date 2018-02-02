@@ -29,6 +29,7 @@ bool options::parse( int argc, const char* argv[] )
 {
     bool result = true;
     bool has_source = false;
+    bool has_output = false;
 
     for ( int i = 1; i < argc; ++i )
     {
@@ -53,6 +54,28 @@ bool options::parse( int argc, const char* argv[] )
         else if ( strcmp( arg, "--conflicts" ) == 0 )
         {
             conflicts = true;
+        }
+        else if ( strcmp( arg, "--o" ) == 0 )
+        {
+            ++i;
+            if ( i < argc )
+            {
+                arg = argv[ i ];
+                if ( ! has_output )
+                {
+                    output = arg;
+                }
+                else
+                {
+                    fprintf( stderr, "additional output argument '%s'\n", arg );
+                    result = false;
+                }
+            }
+            else
+            {
+                fprintf( stderr, "missing output argument\n" );
+                result = false;
+            }
         }
         else
         {

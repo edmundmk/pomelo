@@ -13,12 +13,12 @@ $(include)
 
 enum
 {
-    $(token_name) = $(token_value),
+    $$(token_name) = $$(token_value),
 };
 
 enum
 {
-    $(nterm_name) = $(nterm_value),
+    $$(nterm_name) = $$(nterm_value),
 };
 
 class $(class_name)
@@ -36,11 +36,12 @@ public:
 
 private:
 
-    struct value;
+    struct empty;
+    class  value;
     struct piece;
     struct stack;
     
-    $(rule_type) $(rule_name)($(rule_param));
+    $$(rule_type) $$(rule_name)($$(rule_param));
     
     void reduce( stack* s, int rule );
     void error( int token, const token_type& v );
@@ -52,6 +53,4 @@ private:
     stack _anchor;
 
 };
-
-
 
