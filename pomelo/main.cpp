@@ -79,11 +79,36 @@ int main( int argc, const char* argv[] )
     bool ok = true;
     if ( options.output.size() )
     {
+        FILE* header = fopen( ( options.output + ".h" ).c_str(), "w" );
+        if ( ! header || ! write->write_header( header ) )
+        {
+            ok = false;
+        }
+        if ( header )
+        {
+            fclose( header );
+        }
+        
+        FILE* source = fopen( ( options.output + ".cpp" ).c_str(), "w" );
+        if ( ! source || ! write->write_source( source ) )
+        {
+            ok = false;
+        }
+        if ( source )
+        {
+            fclose( source );
+        }
     }
     else
     {
-        ok = ok && write->write_header( stdout );
-        ok = ok && write->write_source( stdout );
+        if ( ! write->write_header( stdout ) )
+        {
+            ok = false;
+        }
+        if ( ! write->write_source( stdout ) )
+        {
+            ok = false;
+        }
     }
     
     if ( ! ok )

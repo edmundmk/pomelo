@@ -8,6 +8,7 @@
 
 
 #include "$(header)"
+#include <assert.h>
 #include <memory>
 
 
@@ -70,7 +71,7 @@ public:
     value()                                 : _state( -1 ), _kind( -2 ) {}
     explicit value( int s )                 : _state( s ), _kind( -2 ) {}
 
-    value( int s, const token_type& v )     : _state( s ), _kind( -1 ) { new ( (token_type*)_storage ) token_type( v ); }
+?(token_type)    value( int s, const token_type& v )     : _state( s ), _kind( -1 ) { new ( (token_type*)_storage ) token_type( v ); }
     value( int s, $$(ntype_type)&& v )      : _state( s ), _kind( $$(ntype_value) ) { new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( std::move( v ) ); }
     value( int s, const $$(ntype_type)& v ) : _state( s ), _kind( $$(ntype_value) ) { new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v ); }
     
@@ -81,39 +82,39 @@ public:
     
     ~value()                                { destroy(); }
     
-    int state()                             { return _state; }
-    template < typename T > T& get()        { return *(T*)_storage; }
-    template < typename T > T&& move()      { return std::move( *(T*)_storage; }
+    int state() const                       { return _state; }
+    template < typename T > T& get() const  { return *(T*)_storage; }
+    template < typename T > T&& move()      { return std::move( *(T*)_storage ); }
     
     
 private:
 
     void construct( value&& v )
     {
-        kind = v.kind;
-        switch ( kind )
+        _kind = v._kind;
+        switch ( _kind )
         {
-        case -1: new ( (token_type*)storage ) token_type( v.move< token_type >() ); break;
-        case $$(ntype_value): new ( ($$(ntype_type)*)storage ) $$(ntype_type)( v.move< $$(ntype_type) >() ); break;
+?(token_type)        case -1: new ( (token_type*)_storage ) token_type( v.move< token_type >() ); break;
+        case $$(ntype_value): new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v.move< $$(ntype_type) >() ); break;
         }
     }
     
     void construct( const value& v )
     {
-        kind = v.kind;
-        switch ( kind )
+        _kind = v._kind;
+        switch ( _kind )
         {
-        case -1: new ( (token_type*)storage ) token_type( v.get< token_type >() ); break;
-        case $$(ntype_value): new ( ($$(ntype_type)*)storage ) $$(ntype_type)( v.get< $$(ntype_type) >() ); break;
+?(token_type)        case -1: new ( (token_type*)_storage ) token_type( v.get< token_type >() ); break;
+        case $$(ntype_value): new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v.get< $$(ntype_type) >() ); break;
         }
     }
     
     void destroy()
     {
-        switch ( kind )
+        switch ( _kind )
         {
-        case -1: ( (token_type*)storage )->~token_type() ); break;
-        case $$(ntype_value): ( ($$(ntype_type)*)storage )->~$$(ntype_type)(); break;
+?(token_type)        case -1: ( (token_type*)_storage )->~token_type() ); break;
+        case $$(ntype_value): ( ($$(ntype_type)*)_storage )->~$$(ntype_type)(); break;
         }
     }
 
@@ -121,12 +122,14 @@ private:
     int _kind;
     std::aligned_storage_t
         <
-              sizeof( token_type )
+?(token_type)              sizeof( token_type )
+!(token_type)              0
             + sizeof( $$(ntype_type) )
         ,
         std::max
         ({
-              alignof( token_type )
+?(token_type)              alignof( token_type )
+!(token_type)              0
             + alignof( $$(ntype_type) )
         })
         >
@@ -153,20 +156,6 @@ struct $(class_name)::piece
     int refcount;
     piece* prev;
     std::vector< value > values;
-}
-
-
-
-/*
-    The top of an active parse stack.  They are in a doubly-linked list.
-*/
-
-struct $(class_name)::stack
-{
-    int state;
-    piece* piece;
-    stack* prev;
-    stack* next;
 };
 
 
@@ -175,9 +164,11 @@ struct $(class_name)::stack
     Implementation of the parser.
 */
 
-$(class_name)::$(class_name)( const user_value& u )
-    :   u( u )
-    ,   _anchor{ -1, nullptr, nullptr }
+?(user_value)$(class_name)::$(class_name)( const user_value& u )
+?(user_value)    :   u( u )
+?(user_value)    ,   _anchor{ -1, nullptr, nullptr }
+!(user_value)$(class_name)::$(class_name)()
+!(user_value)    :   _anchor{ -1, nullptr, nullptr }
 {
     new_stack( &_anchor, nullptr, START_STATE );
 }

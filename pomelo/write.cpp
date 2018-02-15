@@ -46,6 +46,11 @@ std::string write::trim( const std::string& s )
     }
 }
 
+bool write::starts_with( const std::string& s, const std::string& z )
+{
+    return s.compare( 0, z.size(), z ) == 0;
+}
+
 
 void write::prepare()
 {
@@ -168,16 +173,16 @@ void write::prepare()
 
 bool write::write_header( FILE* f )
 {
-    return write_template( f, (char*)template_h, template_h_len );
+    return write_template( f, (char*)template_h, template_h_len, true );
 }
 
 bool write::write_source( FILE* f )
 {
-    return write_template( f, (char*)template_cpp, template_cpp_len );
+    return write_template( f, (char*)template_cpp, template_cpp_len, false );
 }
 
 
-bool write::write_template( FILE* f, char* source, size_t length )
+bool write::write_template( FILE* f, char* source, size_t length, bool header )
 {
     // Process file line-by-line.
     size_t i = 0;
@@ -198,7 +203,28 @@ bool write::write_template( FILE* f, char* source, size_t length )
         // Get line.
         std::string line( source + i, iend - i );
         std::string output;
-    
+        
+        if ( line[ 0 ] == '?' || line[ 0 ] == '!' )
+        {
+            syntax_ptr syntax = _automata->syntax;
+
+            bool skip = false;
+            skip = skip || ( starts_with( line, "?(user_value)" ) && trim( syntax->user_value.text ).empty() );
+            skip = skip || ( starts_with( line, "!(user_value)" ) && trim( syntax->user_value.text ).size() );
+            skip = skip || ( starts_with( line, "?(token_type)" ) && trim( syntax->token_type.text ).empty() );
+            skip = skip || ( starts_with( line, "!(token_type)" ) && trim( syntax->token_type.text ).size() );
+            
+            if ( skip )
+            {
+                i = iend;
+                continue;
+            }
+            else
+            {
+                line = line.substr( line.find( ')' ) + 1 );
+            }
+        }
+
         // Check for interpolants.
         size_t per = line.find( "$$(" );
         if ( per != std::string::npos )
@@ -236,7 +262,7 @@ bool write::write_template( FILE* f, char* source, size_t length )
             {
                 for ( const auto& rule : _automata->syntax->rules )
                 {
-                    output += replace( replace( line, rule.get() ) );
+                    output += replace( replace( line, rule.get(), header ) );
                 }
             }
             else
@@ -439,7 +465,12 @@ std::string write::replace( std::string line, terminal* token )
         if ( valname == "$$(token_name)" )
         {
             std::string name = syntax->source->text( token->name );
-            r.replace( trim( syntax->token_prefix.text ) + name );
+            std::string prefix = trim( syntax->token_prefix.text );
+            if ( prefix.empty() )
+            {
+                prefix = "TOKEN_";
+            }
+            r.replace( prefix + name );
         }
         else if ( valname == "$$(token_value)" )
         {
@@ -470,7 +501,12 @@ std::string write::replace( std::string line, nonterminal* nterm )
         {
             std::string name = syntax->source->text( nterm->name );
             std::transform( name.begin(), name.end(), name.begin(), ::toupper );
-            r.replace( trim( syntax->nterm_prefix.text ) + name );
+            std::string prefix = trim( syntax->nterm_prefix.text );
+            if ( prefix.empty() )
+            {
+                prefix = "NTERM_";
+            }
+            r.replace( prefix + name );
         }
         else if ( valname == "$$(nterm_value)" )
         {
@@ -513,7 +549,7 @@ std::string write::replace( std::string line, ntype* ntype )
     return line;
 }
 
-std::string write::replace( std::string line, rule* rule )
+std::string write::replace( std::string line, rule* rule, bool header )
 {
     /*
         $$(rule_type)
@@ -532,7 +568,17 @@ std::string write::replace( std::string line, rule* rule )
     {
         if ( valname == "$$(rule_type)" )
         {
-            r.replace( _nterm_lookup.at( rule->nonterminal )->ntype );
+            std::string ntype = _nterm_lookup.at( rule->nonterminal )->ntype;
+            if ( ! header && ntype == "empty" )
+            {
+                std::string name = trim( syntax->class_name.text );
+                if ( name.empty() )
+                {
+                    name = "parser";
+                }
+                ntype = name + "::" + ntype;
+            }
+            r.replace( ntype );
         }
         else if ( valname == "$$(rule_name)" )
         {

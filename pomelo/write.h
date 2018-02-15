@@ -40,12 +40,14 @@ private:
     };
 
     std::string trim( const std::string& s );
-    bool write_template( FILE* f, char* source, size_t length );
+    bool starts_with( const std::string& s, const std::string& z );
+        
+    bool write_template( FILE* f, char* source, size_t length, bool header );
     std::string replace( std::string line );
     std::string replace( std::string line, terminal* token );
     std::string replace( std::string line, nonterminal* nterm );
     std::string replace( std::string line, ntype* ntype );
-    std::string replace( std::string line, rule* rule );
+    std::string replace( std::string line, rule* rule, bool header );
     std::string write_table( const std::vector< int >& table );
     std::string write_rule_table();
 

@@ -55,7 +55,7 @@ bool options::parse( int argc, const char* argv[] )
         {
             conflicts = true;
         }
-        else if ( strcmp( arg, "--o" ) == 0 )
+        else if ( strcmp( arg, "-o" ) == 0 )
         {
             ++i;
             if ( i < argc )

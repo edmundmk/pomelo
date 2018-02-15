@@ -25,13 +25,15 @@ class $(class_name)
 {
 public:
 
-    typedef $(user_value) user_value;
-    typedef $(token_type) token_type;
+?(user_value)    typedef $(user_value) user_value;
+?(token_type)    typedef $(token_type) token_type;
     
-    explicit $(class_name)( const user_value& u );
+?(user_value)    explicit $(class_name)( const user_value& u );
+!(user_value)    $(class_name)();
     ~$(class_name)();
     
-    void parse( int token, const token_type& v );
+?(token_type)    void parse( int token, const token_type& v );
+!(token_type)    void parse( int token );
 
 
 private:
@@ -39,17 +41,25 @@ private:
     struct empty;
     class  value;
     struct piece;
-    struct stack;
+    
+    struct stack
+    {
+        int state;
+        piece* piece;
+        stack* prev;
+        stack* next;
+    };
     
     $$(rule_type) $$(rule_name)($$(rule_param));
     
     void reduce( stack* s, int rule );
-    void error( int token, const token_type& v );
+?(token_type)    void error( int token, const token_type& v );
+!(token_type)    void error( int token );
     
     stack* new_stack( stack* list, piece* prev, int state );
     void delete_stack( stack* s );
     
-    user_value u;
+?(user_value)    user_value u;
     stack _anchor;
 
 };
