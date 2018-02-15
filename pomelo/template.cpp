@@ -181,7 +181,8 @@ $(class_name)::~$(class_name)()
     }
 }
 
-void $(class_name)::parse( int token, const token_type& v )
+?(token_type)void $(class_name)::parse( int token, const token_type& v )
+!(token_type)void $(class_name)::parse( int token )
 {
     // Evaluate for each active parse stack.
     for ( stack* s = _anchor.next; s; s = s->next )
@@ -196,7 +197,8 @@ void $(class_name)::parse( int token, const token_type& v )
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
-                s->piece->values.push_back( value( s->state, v ) );
+?(token_type)                s->piece->values.push_back( value( s->state, v ) );
+!(token_type)                s->piece->values.push_back( value( s->state, empty() ) );
                 s->state = action;
                 break;
             }
@@ -214,7 +216,7 @@ void $(class_name)::parse( int token, const token_type& v )
                 // create a unique stack piece for each action.  We continue
                 // from the first stack we reduced with.
                 stack* loop_stack = s->prev;
-                stack* z = prev;
+                stack* z = s->prev;
                 
                 // Get list of actions in the conflict.
                 const auto* conflict = CONFLICT + action - STATE_COUNT - RULE_COUNT;
@@ -229,7 +231,8 @@ void $(class_name)::parse( int token, const token_type& v )
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ 1 ];
-                    z->piece->values.push_back( value( z->state, v ) );
+?(token_type)                    z->piece->values.push_back( value( z->state, v ) );
+!(token_type)                    z->piece->values.push_back( value( z->state, empty() ) );
                     z->state = action;
                     
                     // Ignore this stack until the next token.
@@ -268,7 +271,8 @@ void $(class_name)::parse( int token, const token_type& v )
                 }
                 
                 // Otherwise report the error.
-                error( int token, v );
+?(token_type)                error( token, v );
+!(token_type)                error( token );
                 
                 // TODO: error recovery.
                 return;
@@ -297,7 +301,7 @@ void $(class_name)::reduce( stack* s, int rule )
         if ( prev->refcount == 1 )
         {
             // Move all values from this piece to the previous one.
-            prev->values.reserve( prev->values.size() + s->piece->values->size() );
+            prev->values.reserve( prev->values.size() + s->piece->values.size() );
             std::move
             (
                 s->piece->values.begin(),
@@ -389,7 +393,8 @@ void $(class_name)::reduce( stack* s, int rule )
     s->state = gotos;
 }
 
-void $(class_name)::error( int token, const token_type& v )
+?(token_type)void $(class_name)::error( int token, const token_type& v )
+!(token_type)void $(class_name)::error( int token )
 {
     $(error_report)
 }

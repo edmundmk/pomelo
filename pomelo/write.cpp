@@ -86,8 +86,20 @@ void write::prepare()
         []( nonterminal* a, nonterminal* b ) { return a->value < b->value; }
     );
     
-    // Work out nonterminal types for each nonterminal.
+    
+    // If there is no user-specified token type, then add the empty type.
     std::unordered_map< std::string, ntype* > lookup;
+    if ( trim( _automata->syntax->token_type.text ).empty() )
+    {
+        std::unique_ptr< ntype > n = std::make_unique< ntype >();
+        n->ntype = "empty";
+        n->value = (int)_ntypes.size();
+        ntype* resolved = n.get();
+        lookup.emplace( "empty", resolved );
+        _ntypes.push_back( std::move( n ) );
+    }
+    
+    // Work out nonterminal types for each nonterminal.
     for ( nonterminal* nterm : _nterms )
     {
         std::string type = trim( nterm->type );
