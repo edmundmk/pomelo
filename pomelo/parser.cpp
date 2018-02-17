@@ -530,6 +530,11 @@ void parser::next()
                     {
                         _syntax->source->new_line( _sloc );
                     }
+                    else if ( c == EOF )
+                    {
+                        _errors->error( _tloc, "unterminated block comment" );
+                        break;
+                    }
                 }
                 continue;
             }

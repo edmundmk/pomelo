@@ -18,17 +18,19 @@
 		DBDC9D72201DE26D005153CE /* actions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D70201DE26D005153CE /* actions.cpp */; };
 		DBDC9D75201DE68D005153CE /* options.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D73201DE68D005153CE /* options.cpp */; };
 		DBDC9D7E201FBAD2005153CE /* search.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDC9D7C201FBAD2005153CE /* search.cpp */; };
+		DBFA29BC20372BBF00C495C0 /* pomelo in CopyFiles */ = {isa = PBXBuildFile; fileRef = DB3070D61FDCA6A000AACBDC /* pomelo */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		DB3070D41FDCA6A000AACBDC /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
+			buildActionMask = 12;
+			dstPath = /usr/local/bin;
 			dstSubfolderSpec = 0;
 			files = (
+				DBFA29BC20372BBF00C495C0 /* pomelo in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
