@@ -6,8 +6,9 @@
 //  Copyright © 2017 Edmund Kapusniak. All rights reserved.
 //
 
-#include "automata.h"
 
+#include "automata.h"
+#include <limits.h>
 
 
 /*
@@ -197,8 +198,8 @@ transition::transition( state* prev, state* next, ::symbol* nsym, ::token token,
     :   prev( prev )
     ,   next( next )
     ,   symbol( nsym )
-    ,   visited( 0 )
     ,   token( token )
+    ,   visited( 0 )
     ,   conflicts( conflicts )
 {
 }

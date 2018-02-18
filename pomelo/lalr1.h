@@ -20,7 +20,7 @@
 
 
 struct closure_key;
-struct location_compare;
+class location_compare;
 class lalr1;
 
 typedef std::shared_ptr< lalr1 > lalr1_ptr;

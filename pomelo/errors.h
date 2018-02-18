@@ -40,6 +40,7 @@ struct file_line
 
 struct source_locator
 {
+    virtual ~source_locator() {};
     virtual file_line source_location( srcloc sloc ) = 0;
 };
 
