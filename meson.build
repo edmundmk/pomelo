@@ -32,7 +32,7 @@ sources += custom_target(
 executable(
     'pomelo',
     sources : sources,
-    override_options : [ 'cpp_std=gnu++14' ],
+    override_options : [ 'cpp_std=gnu++17' ],
     install : true
 )
 

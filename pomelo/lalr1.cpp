@@ -7,8 +7,9 @@
 //
 
 
-#include <assert.h>
 #include "lalr1.h"
+#include <assert.h>
+#include <string.h>
 
 
 /*
@@ -54,14 +55,14 @@ bool location_compare::operator () ( size_t a, size_t b ) const
     const location& al = _syntax->locations.at( a );
     const location& bl = _syntax->locations.at( b );
     
-    if ( al.symbol != bl.symbol )
+    if ( al.sym != bl.sym )
     {
         // Compare symbols.  null symbols are greater than all others.
-        if ( al.symbol == nullptr )
+        if ( al.sym == nullptr )
             return false;
-        if ( bl.symbol == nullptr )
+        if ( bl.sym == nullptr )
             return true;
-        return al.symbol->value < bl.symbol->value;
+        return al.sym->value < bl.sym->value;
     }
     else
     {
@@ -148,7 +149,7 @@ automata_ptr lalr1::construct()
     // to the transitions which shift the newly-reduced symbol.
     for ( const auto& transition : _automata->transitions )
     {
-        if ( ! transition->symbol->is_terminal )
+        if ( ! transition->sym->is_terminal )
         {
             add_reducefroms( transition.get() );
         }
@@ -161,9 +162,9 @@ automata_ptr lalr1::construct()
         {
             size_t iloc = state->closure->locations[ i ];
             const location& loc = _automata->syntax->locations[ iloc ];
-            if ( ! loc.symbol )
+            if ( ! loc.sym )
             {
-                reduce_lookahead( state.get(), loc.rule );
+                reduce_lookahead( state.get(), loc.drule );
             }
         }
     }
@@ -180,7 +181,7 @@ bool lalr1::erasable_rule( rule* rule )
     {
         size_t iloc = rule->lostart + i;
         const location& loc = _automata->syntax->locations.at( iloc );
-        if ( loc.symbol->is_terminal || !( (nonterminal*)loc.symbol )->erasable )
+        if ( loc.sym->is_terminal || !( (nonterminal*)loc.sym )->erasable )
         {
             return false;
         }
@@ -200,9 +201,9 @@ void lalr1::add_location( size_t locindex )
     
     // If the next symbol is a nonterminal, add initial states for symbol.
     const location& l = _automata->syntax->locations.at( locindex );
-    if ( l.symbol && ! l.symbol->is_terminal )
+    if ( l.sym && ! l.sym->is_terminal )
     {
-        nonterminal* nsym = (nonterminal*)l.symbol;
+        nonterminal* nsym = (nonterminal*)l.sym;
         for ( rule* rule : nsym->rules )
         {
             add_location( rule->lostart );
@@ -221,7 +222,7 @@ void lalr1::add_transitions( state* pstate )
         // Find next symbol.
         size_t iloc = pstate->closure->locations[ i ];
         const location& l = _automata->syntax->locations.at( iloc );
-        symbol* nsym = l.symbol;
+        symbol* nsym = l.sym;
         bool conflicts = l.conflicts;
         
         // If the next symbol is null the following locations all reduce.
@@ -237,13 +238,13 @@ void lalr1::add_transitions( state* pstate )
             const location& l = _automata->syntax->locations.at( iloc );
             
             // Check if this location can shift the same symbol.
-            if ( l.symbol != nsym )
+            if ( l.sym != nsym )
             {
                 break;
             }
             
             // Add following location to the state.
-            if ( l.symbol )
+            if ( l.sym )
             {
                 add_location( iloc + 1 );
             }
@@ -321,7 +322,7 @@ state* lalr1::close_state()
 
     size_t iloc = pstate->closure->locations[ 0 ];
     const auto& loc = _automata->syntax->locations[ iloc ];
-    if ( loc.rule->nonterminal == _automata->syntax->start && ! loc.symbol )
+    if ( loc.drule->nterm == _automata->syntax->start && ! loc.sym )
     {
         assert( ! _automata->accept );
         _automata->accept = pstate;
@@ -337,8 +338,8 @@ state* lalr1::close_state()
 void lalr1::add_reducefroms( transition* nonterm )
 {
     // This transition is a nonterminal.
-    assert( ! nonterm->symbol->is_terminal );
-    nonterminal* nsym = (nonterminal*)nonterm->symbol;
+    assert( ! nonterm->sym->is_terminal );
+    nonterminal* nsym = (nonterminal*)nonterm->sym;
 
     // Follow each rule to find the reduction transition.
     for ( rule* rule : nsym->rules )
@@ -354,7 +355,7 @@ void lalr1::add_reducefroms( transition* nonterm )
             // Follow transition.
             for ( transition* trans : state->next )
             {
-                if ( trans->symbol == loc.symbol )
+                if ( trans->sym == loc.sym )
                 {
                     fsymbol = trans;
                     state = trans->next;
@@ -389,7 +390,7 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
         {
             for ( reducefrom* reducefrom : trans->rgoto )
             {
-                if ( reducefrom->rule == rule )
+                if ( reducefrom->drule == rule )
                 {
                     assert( reducefrom->finalsymbol == trans );
                     follow_lookahead( reducefrom->nonterminal );
@@ -403,7 +404,7 @@ void lalr1::reduce_lookahead( state* state, rule* rule )
         // of the next transitions from this state.
         for ( transition* trans : state->next )
         {
-            if ( trans->symbol == rule->nonterminal )
+            if ( trans->sym == rule->nterm )
             {
                 follow_lookahead( trans );
                 break;
@@ -457,11 +458,11 @@ void lalr1::direct_lookahead( state* state )
     state->visited = _automata->visited;
     for ( transition* trans : state->next )
     {
-        if ( trans->symbol->is_terminal )
+        if ( trans->sym->is_terminal )
         {
-            _lookahead.insert( (terminal*)trans->symbol );
+            _lookahead.insert( (terminal*)trans->sym );
         }
-        else if ( ( (nonterminal*)trans->symbol )->erasable )
+        else if ( ( (nonterminal*)trans->sym )->erasable )
         {
             direct_lookahead( trans->next );
         }

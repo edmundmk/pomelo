@@ -67,9 +67,9 @@ void syntax::print()
                 {
                     printf( "! " );
                 }
-                if ( l.symbol )
+                if ( l.sym )
                 {
-                    printf( "%s", source->text( l.symbol->name ) );
+                    printf( "%s", source->text( l.sym->name ) );
                     if ( l.sparam )
                     {
                         printf( "(%s)", source->text( l.sparam ) );
@@ -129,8 +129,8 @@ nonterminal::nonterminal( token name )
 }
 
 
-rule::rule( ::nonterminal* nonterminal )
-    :   nonterminal( nonterminal )
+rule::rule( nonterminal* nterm )
+    :   nterm( nterm )
     ,   lostart( 0 )
     ,   locount( 0 )
     ,   precedence( nullptr )

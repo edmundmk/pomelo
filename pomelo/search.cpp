@@ -7,8 +7,9 @@
 //
 
 
-#include <assert.h>
 #include "search.h"
+#include <assert.h>
+#include <limits.h>
 
 
 bool left_search::heuristic::operator () ( left_node* a, left_node* b ) const
@@ -20,11 +21,11 @@ bool left_search::heuristic::operator () ( left_node* a, left_node* b ) const
 
 
 
-left_search::left_node::left_node( ::state* state )
+left_search::left_node::left_node( state* xstate )
     :   parent( nullptr )
-    ,   child( state->prev.size() )
-    ,   state( state )
-    ,   symbol( nullptr )
+    ,   child( xstate->prev.size() )
+    ,   xstate( xstate )
+    ,   sym( nullptr )
     ,   distance( 0 )
 {
 }
@@ -32,8 +33,8 @@ left_search::left_node::left_node( ::state* state )
 left_search::left_node::left_node( left_node* parent, transition* trans )
     :   parent( parent )
     ,   child( trans->prev->prev.size() )
-    ,   state( trans->prev )
-    ,   symbol( trans->symbol )
+    ,   xstate( trans->prev )
+    ,   sym( trans->sym )
     ,   distance( parent->distance + 1 )
 {
 }
@@ -75,7 +76,7 @@ left_context_ptr left_search::generate()
         // Find unvisisted open transition with lowest distance.
         size_t index = -1;
         int distance = INT_MAX;
-        for ( size_t i = 0; i < node->state->prev.size(); ++i )
+        for ( size_t i = 0; i < node->xstate->prev.size(); ++i )
         {
             if ( node->child.at( i ) )
             {
@@ -83,7 +84,7 @@ left_context_ptr left_search::generate()
                 continue;
             }
             
-            transition* trans = node->state->prev.at( i );
+            transition* trans = node->xstate->prev.at( i );
             if ( trans->visited != _automata->visited
                  && trans->prev->start_distance < distance )
             {
@@ -92,13 +93,13 @@ left_context_ptr left_search::generate()
         }
         
         // Generate shortest route back from the node to the start state.
-        if ( index != -1 )
+        if ( index != (size_t)-1 )
         {
             // This node still had at least one open route.
             _open.push( node );
         
             // Have not gone down this route yet.
-            transition* trans = node->state->prev.at( index );
+            transition* trans = node->xstate->prev.at( index );
             trans->visited = _automata->visited;
 
             // Add new node at start of open route.
@@ -120,13 +121,13 @@ left_context_ptr left_search::generate()
 left_context_ptr left_search::generate_route( left_node* node )
 {
     // Find route that links towards start node.
-    while ( node->state != _automata->start )
+    while ( node->xstate != _automata->start )
     {
-        for ( size_t i = 0; i < node->state->prev.size(); ++i )
+        for ( size_t i = 0; i < node->xstate->prev.size(); ++i )
         {
             // There must be a transition that moves closer to the start state.
-            transition* trans = node->state->prev.at( i );
-            if ( trans->prev->start_distance >= node->state->start_distance )
+            transition* trans = node->xstate->prev.at( i );
+            if ( trans->prev->start_distance >= node->xstate->start_distance )
             {
                 continue;
             }
@@ -143,13 +144,13 @@ left_context_ptr left_search::generate_route( left_node* node )
     
     // Build left context terminating at node.
     left_context_ptr lcontext = std::make_shared< left_context >();
-    lcontext->state = _target;
+    lcontext->xstate = _target;
     
     size_t i = 0;
     lcontext->context.resize( node->distance );
-    for ( ; node->symbol; node = node->parent )
+    for ( ; node->sym; node = node->parent )
     {
-        lcontext->context[ i++ ] = { node->state, node->symbol };
+        lcontext->context[ i++ ] = { node->xstate, node->sym };
     }
     assert( i == lcontext->context.size() );
     
@@ -159,19 +160,19 @@ left_context_ptr left_search::generate_route( left_node* node )
 
 
 
-parse_search::value::value( value* prev, ::state* state, ::symbol* symbol )
+parse_search::value::value( value* prev, state* xstate, symbol* sym )
     :   prev( prev )
-    ,   state( state )
-    ,   symbol( symbol )
+    ,   xstate( xstate )
+    ,   sym( sym )
     ,   chead( nullptr )
     ,   ctail( nullptr )
 {
 }
 
 
-parse_search::search_head::search_head( value* stack, ::state* state, int distance )
+parse_search::search_head::search_head( value* stack, state* xstate, int distance )
     :   stack( stack )
-    ,   state( state )
+    ,   xstate( xstate )
     ,   distance( distance )
 {
 }
@@ -181,21 +182,21 @@ parse_search::search_head::search_head( value* stack, ::state* state, int distan
 
 bool parse_search::heuristic::operator () ( const search_head& a, const search_head& b ) const
 {
-    int acost = a.distance + a.state->accept_distance;
-    int bcost = b.distance + b.state->accept_distance;
+    int acost = a.distance + a.xstate->accept_distance;
+    int bcost = b.distance + b.xstate->accept_distance;
     return acost > bcost;
 }
 
 
 parse_search::parse_search( automata_ptr automata, left_context_ptr lcontext )
     :   _automata( automata )
-    ,   _left( nullptr, lcontext->state, 0 )
+    ,   _left( nullptr, lcontext->xstate, 0 )
     ,   _accept( nullptr )
 {
     // Build parser stack for left context.
     for ( const auto& lv : lcontext->context )
     {
-        auto v = std::make_unique< value >( _left.stack, lv.state, lv.symbol );
+        auto v = std::make_unique< value >( _left.stack, lv.xstate, lv.sym );
         _left.stack = v.get();
         _values.push_back( std::move( v ) );
     }
@@ -229,7 +230,7 @@ bool parse_search::search()
         _open.pop();
         
         // If the parse state accepts, we are done.
-        if ( ! head.state->accept_distance )
+        if ( ! head.xstate->accept_distance )
         {
             _accept = head.stack->prev;
             return true;
@@ -244,13 +245,13 @@ bool parse_search::search()
         
         // Also 'shift' nonterminals, in case that gets us to the accept state
         // quicker.
-        for ( transition* trans : head.state->next )
+        for ( transition* trans : head.xstate->next )
         {
-            if ( trans->symbol->is_terminal )
+            if ( trans->sym->is_terminal )
             {
                 continue;
             }
-            _open.push( shift( head, trans->next, trans->symbol ) );
+            _open.push( shift( head, trans->next, trans->sym ) );
         }
         
         // Check if all moves failed and there are no alternatives.
@@ -284,7 +285,7 @@ bool parse_search::search()
 parse_search::search_head parse_search::shift( const search_head& head, state* next, symbol* sym )
 {
 //    printf( "-->> %s\n", _automata->syntax->source->text( sym->name ) );
-    value_ptr v = std::make_unique< value >( head.stack, head.state, sym );
+    value_ptr v = std::make_unique< value >( head.stack, head.xstate, sym );
     search_head move( v.get(), next, head.distance + 1 );
     _values.push_back( std::move( v ) );
     return move;
@@ -312,7 +313,7 @@ parse_search::search_head parse_search::reduce( const search_head& head, rule* r
 */
     // Pop stack.
     size_t reduce_count = rule->locount - 1;
-    state* valstate = head.state;
+    state* valstate = head.xstate;
     value* valprev = head.stack;
     value* chead = nullptr;
     value* ctail = nullptr;
@@ -322,7 +323,7 @@ parse_search::search_head parse_search::reduce( const search_head& head, rule* r
         for ( size_t i = 0; i < reduce_count; ++i )
         {
             chead = valprev;
-            valstate = valprev->state;
+            valstate = valprev->xstate;
             valprev = valprev->prev;
         }
     }
@@ -331,7 +332,7 @@ parse_search::search_head parse_search::reduce( const search_head& head, rule* r
     state* next_state = nullptr;
     for ( transition* trans : valstate->next )
     {
-        if ( trans->symbol == rule->nonterminal )
+        if ( trans->sym == rule->nterm )
         {
             next_state = trans->next;
             break;
@@ -340,7 +341,7 @@ parse_search::search_head parse_search::reduce( const search_head& head, rule* r
     assert( next_state );
     
     // Create new value and new head.
-    value_ptr v = std::make_unique< value >( valprev, valstate, rule->nonterminal );
+    value_ptr v = std::make_unique< value >( valprev, valstate, rule->nterm );
     v->chead = chead;
     v->ctail = ctail;
     search_head move( v.get(), next_state, head.distance + 1 );
@@ -407,9 +408,9 @@ void parse_search::print( const value* tail, const value* head, std::string* out
         else
         {
             out_print->append( " " );
-            if ( v->symbol )
+            if ( v->sym )
             {
-                out_print->append( source->text( v->symbol->name ) );
+                out_print->append( source->text( v->sym->name ) );
             }
             else
             {
@@ -432,7 +433,7 @@ void parse_search::parse( const search_head& head, terminal* term )
     search_head move = head;
     while ( true )
     {
-        const action& action = move.state->actions.at( term->value );
+        const action& action = move.xstate->actions.at( term->value );
         switch ( action.kind )
         {
         case ACTION_ERROR:
@@ -446,18 +447,18 @@ void parse_search::parse( const search_head& head, terminal* term )
             
         case ACTION_REDUCE:
             // Reduce terminal and continue until we can shift.
-            move = reduce( move, action.reduce->rule );
+            move = reduce( move, action.reduce->drule );
             continue;
         
         case ACTION_CONFLICT:
             // Perform all possible actions.
-            if ( action.conflict->shift )
+            if ( action.cflict->shift )
             {
-                _open.push( shift( move, action.conflict->shift->next, term ) );
+                _open.push( shift( move, action.cflict->shift->next, term ) );
             }
-            for ( reduction* reduction : action.conflict->reduce )
+            for ( reduction* reduction : action.cflict->reduce )
             {
-                parse( reduce( move, reduction->rule ), term );
+                parse( reduce( move, reduction->drule ), term );
             }
             return;
         }

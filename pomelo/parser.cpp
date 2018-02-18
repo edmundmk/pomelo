@@ -8,6 +8,7 @@
 
 #include "parser.h"
 #include <stdio.h>
+#include <string.h>
 
 
 parser::parser( errors_ptr errors, syntax_ptr syntax )
@@ -330,9 +331,9 @@ void parser::parse_rule( nonterminal* nonterminal )
             symbol* symbol = declare_symbol( _token );
             location l = { rule.get(), symbol, _token, NULL_TOKEN, conflicts };
             
-            if ( l.symbol->is_terminal && ! rule->precedence )
+            if ( l.sym->is_terminal && ! rule->precedence )
             {
-                rule->precedence = (terminal*)l.symbol;
+                rule->precedence = (terminal*)l.sym;
                 rule->precetoken = _token;
             }
             

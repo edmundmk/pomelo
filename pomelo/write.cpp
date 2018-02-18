@@ -7,8 +7,9 @@
 //
 
 
-#include <assert.h>
 #include "write.h"
+#include <assert.h>
+#include <string_view>
 
 
 namespace
@@ -580,7 +581,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
     {
         if ( valname == "$$(rule_type)" )
         {
-            std::string ntype = _nterm_lookup.at( rule->nonterminal )->ntype;
+            std::string ntype = _nterm_lookup.at( rule->nterm )->ntype;
             if ( ! header && ntype == "empty" )
             {
                 std::string name = trim( syntax->class_name.text );
@@ -599,7 +600,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
         else if ( valname == "$$(rule_param)" )
         {
             std::string prm;
-            for ( int i = 0; i < rule->locount - 1; ++i )
+            for ( size_t i = 0; i < rule->locount - 1; ++i )
             {
                 size_t iloc = rule->lostart + i;
                 const location& loc = syntax->locations.at( iloc );
@@ -612,14 +613,14 @@ std::string write::replace( std::string line, rule* rule, bool header )
                 {
                     prm += ",";
                 }
-                if ( loc.symbol->is_terminal )
+                if ( loc.sym->is_terminal )
                 {
                     prm += " token_type&&";
                 }
                 else
                 {
                     prm += " ";
-                    nonterminal* nterm = (nonterminal*)loc.symbol;
+                    nonterminal* nterm = (nonterminal*)loc.sym;
                     prm += _nterm_lookup.at( nterm )->ntype;
                     prm += "&&";
                 }
@@ -660,7 +661,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
         else if ( valname == "$$(rule_args)" )
         {
             std::string args;
-            for ( int i = 0; i < rule->locount - 1; ++i )
+            for ( size_t i = 0; i < rule->locount - 1; ++i )
             {
                 size_t iloc = rule->lostart + i;
                 const location& loc = syntax->locations.at( iloc );
@@ -726,19 +727,19 @@ std::string write::write_rule_table()
     {
         rule* rule = _automata->syntax->rules.at( i ).get();
         s += "    { ";
-        s += std::to_string( rule->nonterminal->value - token_count );
+        s += std::to_string( rule->nterm->value - token_count );
         s += ", ";
         s += std::to_string( (int)rule->locount - 1 );
         s += " }, // ";
 
-        s += source->text( rule->nonterminal->name );
+        s += source->text( rule->nterm->name );
         s += " :";
         for ( size_t i = 0; i < rule->locount - 1; ++i )
         {
             size_t iloc = rule->lostart + i;
             const location& loc = _automata->syntax->locations.at( iloc );
             s += " ";
-            s += source->text( loc.symbol->name );
+            s += source->text( loc.sym->name );
         }
         
         s += "\n";

@@ -42,13 +42,13 @@ typedef std::shared_ptr< parse_search > parse_search_ptr;
 
 struct left_context_value
 {
-    state* state;
-    symbol* symbol;
+    state* xstate;
+    symbol* sym;
 };
 
 struct left_context
 {
-    state* state;
+    state* xstate;
     std::vector< left_context_value > context;
 };
 
@@ -88,13 +88,13 @@ private:
     
     struct left_node
     {
-        explicit left_node( state* state );
+        explicit left_node( state* xstate );
         left_node( left_node* parent, transition* trans );
     
         left_node* parent;      // parent search node (closer to target state).
         left_node_list child;   // search nodes for each transition leaving state.
-        state* state;           // state the search has reached.
-        symbol* symbol;         // symbol that transitioned from previous.
+        state* xstate;          // state the search has reached.
+        symbol* sym;            // symbol that transitioned from previous.
         int distance;           // distance from the target state.
     };
     
@@ -152,11 +152,11 @@ private:
 
     struct value
     {
-        value( value* prev, state* state, symbol* symbol );
+        value( value* prev, state* xstate, symbol* sym );
         
         value* prev;    // previous value in stack.
-        state* state;   // state parser was in when this value was pushed.
-        symbol* symbol; // symbol pushed onto stack.
+        state* xstate;  // state parser was in when this value was pushed.
+        symbol* sym;    // symbol pushed onto stack.
         value* chead;   // first value in list of children in parse tree.
         value* ctail;   // last value in list of children in parse tree.
     };
@@ -169,10 +169,10 @@ private:
 
     struct search_head
     {
-        search_head( value* stack, state* state, int distance );
+        search_head( value* stack, state* xstate, int distance );
     
         value* stack;   // value on top of stack.
-        state* state;   // state parse is in.
+        state* xstate;  // state parse is in.
         int distance;   // number of actions to get to this state.
     };
     

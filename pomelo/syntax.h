@@ -10,11 +10,13 @@
 #define SYNTAX_H
 
 
+#include <limits.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <memory>
 #include "token.h"
+
 
 struct directive;
 struct location;
@@ -47,8 +49,8 @@ struct directive
 
 struct location
 {
-    rule*           rule;
-    symbol*         symbol;
+    rule*           drule;
+    symbol*         sym;
     token           stoken;
     token           sparam;
     bool            conflicts;
@@ -106,9 +108,9 @@ struct nonterminal : public symbol
 
 struct rule
 {
-    explicit rule( nonterminal* nonterminal );
+    explicit rule( nonterminal* nterm );
 
-    nonterminal*    nonterminal;
+    nonterminal*    nterm;
     size_t          lostart;
     size_t          locount;
     terminal*       precedence;

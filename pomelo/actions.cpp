@@ -49,7 +49,7 @@ void actions::analyze()
         else
         {
             srcloc sloc = rule_location( rule.get() );
-            const char* prod = _automata->syntax->source->text( rule->nonterminal->name );
+            const char* prod = _automata->syntax->source->text( rule->nterm->name );
             _errors->error( sloc, "this rule for production %s cannot be reduced", prod );
         }
     }
@@ -105,7 +105,7 @@ action_table_ptr actions::build_action_table()
             -1
         );
         
-        assert( state->actions.size() == table->token_count );
+        assert( (int)state->actions.size() == table->token_count );
         for ( size_t i = 0; i < state->actions.size(); ++i )
         {
             const action& action = state->actions.at( i );
@@ -130,12 +130,12 @@ action_table_ptr actions::build_action_table()
                 break;
             
             case ACTION_REDUCE:
-                assert( action.reduce->rule->index != -1 );
-                actval = table->state_count + action.reduce->rule->index;
+                assert( action.reduce->drule->index != -1 );
+                actval = table->state_count + action.reduce->drule->index;
                 break;
             
             case ACTION_CONFLICT:
-                actval = conflict_actval( table.get(), action.conflict );
+                actval = conflict_actval( table.get(), action.cflict );
                 break;
             }
             
@@ -193,10 +193,10 @@ goto_table_ptr actions::build_goto_table()
         
         for ( transition* trans : state->next )
         {
-            if ( trans->symbol->is_terminal )
+            if ( trans->sym->is_terminal )
                 continue;
             
-            nonterminal* nterm = (nonterminal*)trans->symbol;
+            nonterminal* nterm = (nonterminal*)trans->sym;
             assert( nterm->value >= table->token_count );
             assert( nterm->value < table->token_count + table->nterm_count );
             int value = nterm->value - table->token_count;
@@ -248,28 +248,28 @@ void actions::print()
                 break;
             
             case ACTION_REDUCE:
-                printf( "REDUCE %s\n", source->text( action.reduce->rule->nonterminal->name ) );
+                printf( "REDUCE %s\n", source->text( action.reduce->drule->nterm->name ) );
                 break;
             
             case ACTION_CONFLICT:
                 printf( "CONFLICT\n" );
-                if ( action.conflict->shift )
+                if ( action.cflict->shift )
                 {
-                    printf( "        SHIFT %p\n", action.conflict->shift->next );
+                    printf( "        SHIFT %p\n", action.cflict->shift->next );
                 }
-                for ( reduction* reduction : action.conflict->reduce )
+                for ( reduction* reduction : action.cflict->reduce )
                 {
-                    printf( "        REDUCE %s\n", source->text( reduction->rule->nonterminal->name ) );
+                    printf( "        REDUCE %s\n", source->text( reduction->drule->nterm->name ) );
                 }
                 break;
             }
         }
         for ( transition* trans : state->next )
         {
-            if ( trans->symbol->is_terminal )
+            if ( trans->sym->is_terminal )
                 continue;
             
-            printf( "    ** %s -> %p\n", source->text( trans->symbol->name ), trans->next );
+            printf( "    ** %s -> %p\n", source->text( trans->sym->name ), trans->next );
         }
     }
 }
@@ -309,8 +309,8 @@ void actions::build_actions( state* s )
             case ACTION_REDUCE:
             {
                 // Attempt to resolve with precedence.
-                int old_prec = rule_precedence( action->reduce->rule );
-                int new_prec = rule_precedence( reduction->rule );
+                int old_prec = rule_precedence( action->reduce->drule );
+                int new_prec = rule_precedence( reduction->drule );
                 if ( old_prec != new_prec && old_prec != -1 && new_prec != -1 )
                 {
                     // This reduce/reduce conflict is resolved by precedence.
@@ -328,12 +328,12 @@ void actions::build_actions( state* s )
                     {
                         _errors->info
                         (
-                            rule_location( winner->rule ),
+                            rule_location( winner->drule ),
                             "conflict on %s reduce %s/reduce %s resolved in favour of reduce %s",
                             source->text( lookahead->name ),
-                            source->text( action->reduce->rule->nonterminal->name ),
-                            source->text( reduction->rule->nonterminal->name ),
-                            source->text( winner->rule->nonterminal->name )
+                            source->text( action->reduce->drule->nterm->name ),
+                            source->text( reduction->drule->nterm->name ),
+                            source->text( winner->drule->nterm->name )
                         );
                     }
                     
@@ -346,7 +346,7 @@ void actions::build_actions( state* s )
                     conflict->reduce.push_back( action->reduce );
                     conflict->reduce.push_back( reduction );
                     action->kind = ACTION_CONFLICT;
-                    action->conflict = conflict.get();
+                    action->cflict = conflict.get();
                     _automata->conflicts.push_back( std::move( conflict ) );
                     s->has_conflict = true;
                 }
@@ -356,7 +356,7 @@ void actions::build_actions( state* s )
             case ACTION_CONFLICT:
             {
                 // Add reduction to the conflict.
-                action->conflict->reduce.push_back( reduction );
+                action->cflict->reduce.push_back( reduction );
                 break;
             }
             }
@@ -366,12 +366,12 @@ void actions::build_actions( state* s )
     // Go through all transitions of terminals and check shift/reduce conflicts.
     for ( transition* trans : s->next )
     {
-        if ( ! trans->symbol->is_terminal )
+        if ( ! trans->sym->is_terminal )
         {
             continue;
         }
     
-        action* action = &s->actions.at( trans->symbol->value );
+        action* action = &s->actions.at( trans->sym->value );
         
         switch ( action->kind )
         {
@@ -392,8 +392,8 @@ void actions::build_actions( state* s )
             case ACTION_REDUCE:
             {
                 // Attempt to resolve with precedence.
-                terminal* shift_symbol = (terminal*)trans->symbol;
-                int reduce_prec = rule_precedence( action->reduce->rule );
+                terminal* shift_symbol = (terminal*)trans->sym;
+                int reduce_prec = rule_precedence( action->reduce->drule );
                 int shift_prec = shift_symbol->precedence;
                 
                 enum { UNKNOWN, SHIFT, REDUCE, CONFLICT } result = UNKNOWN;
@@ -444,10 +444,10 @@ void actions::build_actions( state* s )
                     {
                         _errors->info
                         (
-                            trans->token.sloc,
+                            trans->tok.sloc,
                             "conflict on %s shift/reduce %s resolved in favour of shift",
                             source->text( shift_symbol->name ),
-                            source->text( action->reduce->rule->nonterminal->name )
+                            source->text( action->reduce->drule->nterm->name )
                         );
                     }
                     action->kind = ACTION_SHIFT;
@@ -462,11 +462,11 @@ void actions::build_actions( state* s )
                     {
                         _errors->info
                         (
-                            rule_location( action->reduce->rule ),
+                            rule_location( action->reduce->drule ),
                             "conflict on %s shift/reduce %s resolved in favour of reduce %s",
                             source->text( shift_symbol->name ),
-                            source->text( action->reduce->rule->nonterminal->name ),
-                            source->text( action->reduce->rule->nonterminal->name )
+                            source->text( action->reduce->drule->nterm->name ),
+                            source->text( action->reduce->drule->nterm->name )
                         );
                     }
                     break;
@@ -478,7 +478,7 @@ void actions::build_actions( state* s )
                     conflict->shift = trans;
                     conflict->reduce.push_back( action->reduce );
                     action->kind = ACTION_CONFLICT;
-                    action->conflict = conflict.get();
+                    action->cflict = conflict.get();
                     _automata->conflicts.push_back( std::move( conflict ) );
                     s->has_conflict = true;
                     break;
@@ -491,7 +491,7 @@ void actions::build_actions( state* s )
             {
                 // Add shift to the conflict.  TODO: check precedence against
                 // all reductions if they are all either SHIFT or REDUCE.
-                action->conflict->shift = trans;
+                action->cflict->shift = trans;
                 break;
             }
         }
@@ -530,7 +530,7 @@ void actions::traverse_rules( state* s )
     {
         for ( reduction* reduce : s->reductions )
         {
-            reduce->rule->reachable = true;
+            reduce->drule->reachable = true;
         }
         return;
     }
@@ -540,7 +540,7 @@ void actions::traverse_rules( state* s )
     // off here are reachable.
     for ( transition* trans : s->next )
     {
-        if ( ! trans->symbol->is_terminal && trans->visited == _automata->visited )
+        if ( ! trans->sym->is_terminal && trans->visited == _automata->visited )
         {
             traverse_rules( trans->next );
         }
@@ -563,11 +563,11 @@ void actions::traverse_rules( state* s )
             break;
         
         case ACTION_CONFLICT:
-            if ( action.conflict->shift )
+            if ( action.cflict->shift )
             {
-                traverse_rules( action.conflict->shift->next );
+                traverse_rules( action.cflict->shift->next );
             }
-            for ( reduction* reduce : action.conflict->reduce )
+            for ( reduction* reduce : action.cflict->reduce )
             {
                 traverse_reduce( s, reduce );
             }
@@ -579,14 +579,14 @@ void actions::traverse_rules( state* s )
 void actions::traverse_reduce( state* s, reduction* reduce )
 {
     // This rule is reachable.
-    reduce->rule->reachable = true;
+    reduce->drule->reachable = true;
     
     // If the rule is an epsilon rule, traverse forward from this state.
-    if ( reduce->rule->locount <= 1 )
+    if ( reduce->drule->locount <= 1 )
     {
         for ( transition* trans : s->next )
         {
-            if ( trans->symbol == reduce->rule->nonterminal )
+            if ( trans->sym == reduce->drule->nterm )
             {
                 trans->visited = _automata->visited;
                 assert( trans->prev->visited == _automata->visited );
@@ -602,10 +602,10 @@ void actions::traverse_reduce( state* s, reduction* reduce )
     {
         for ( reducefrom* rgoto : prev->rgoto )
         {
-            if ( rgoto->rule == reduce->rule )
+            if ( rgoto->drule == reduce->drule )
             {
                 transition* nterm = rgoto->nonterminal;
-                assert( ! nterm->symbol->is_terminal );
+                assert( ! nterm->sym->is_terminal );
                 
                 // This nonterminal transition has been visited.
                 nterm->visited = _automata->visited;
@@ -639,13 +639,13 @@ int actions::conflict_actval( action_table* table, conflict* conflict )
     }
     for ( reduction* reduce : conflict->reduce )
     {
-        assert( reduce->rule->index != -1 );
-        action[ i++ ] = table->state_count + reduce->rule->index;
+        assert( reduce->drule->index != -1 );
+        action[ i++ ] = table->state_count + reduce->drule->index;
     }
     
     // Check if it already exists.
     int index = 0;
-    while ( index < table->conflicts.size() )
+    while ( index < (int)table->conflicts.size() )
     {
         int* othact = table->conflicts.data() + index;
         
@@ -683,27 +683,27 @@ void actions::report_conflicts( state* s )
     for ( size_t i = 0; i < s->actions.size(); )
     {
         action* action = &s->actions.at( i++ );
-        if ( action->kind != ACTION_CONFLICT || action->conflict->reported )
+        if ( action->kind != ACTION_CONFLICT || action->cflict->reported )
         {
             continue;
         }
         
         std::vector< conflict* > conflicts;
-        conflicts.push_back( action->conflict );
-        action->conflict->reported = true;
+        conflicts.push_back( action->cflict );
+        action->cflict->reported = true;
         
         for ( size_t j = i; j < s->actions.size(); ++j )
         {
             ::action* similar = &s->actions.at( j++ );
-            if ( similar->kind != ACTION_CONFLICT || action->conflict->reported )
+            if ( similar->kind != ACTION_CONFLICT || action->cflict->reported )
             {
                 continue;
             }
             
-            if ( similar_conflict( action->conflict, similar->conflict ) )
+            if ( similar_conflict( action->cflict, similar->cflict ) )
             {
-                conflicts.push_back( similar->conflict );
-                similar->conflict->reported = true;
+                conflicts.push_back( similar->cflict );
+                similar->cflict->reported = true;
             }
         }
             
@@ -750,7 +750,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         }
         for ( reduction* reduce : cflict->reduce )
         {
-            if ( ! reduce->rule->conflicts )
+            if ( ! reduce->drule->conflicts )
             {
                 expected = false;
             }
@@ -762,7 +762,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
     for ( conflict* conflict : conflicts )
     {
         report += " ";
-        report += source->text( conflict->terminal->name );
+        report += source->text( conflict->term->name );
     }
     report += " ";
     if ( cflict->shift )
@@ -776,10 +776,10 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
             report += "/";
         }
         report += "reduce ";
-        report += source->text( cflict->reduce.at( i )->rule->nonterminal->name );
+        report += source->text( cflict->reduce.at( i )->drule->nterm->name );
     }
 
-    srcloc sloc = rule_location( cflict->reduce.front()->rule );
+    srcloc sloc = rule_location( cflict->reduce.front()->drule );
     if ( expected )
     {
         if ( _expected_info )
@@ -804,13 +804,13 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
             if ( ! next_state || test_state->accept_distance < next_state->accept_distance )
             {
                 next_state = test_state;
-                next_token = conflict->terminal;
+                next_token = conflict->term;
             }
         }
     }
     else
     {
-        next_token = conflicts.front()->terminal;
+        next_token = conflicts.front()->term;
     }
     
     // Find left context which successfully supports all conflicting actions.
@@ -833,8 +833,8 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         for ( reduction* reduce : cflict->reduce )
         {
             auto rp = std::make_shared< parse_search >( _automata, lcontext );
-            success = success && rp->reduce( reduce->rule, next_token );
-            reducep.emplace_back( reduce->rule, rp );
+            success = success && rp->reduce( reduce->drule, next_token );
+            reducep.emplace_back( reduce->drule, rp );
         }
     
         if ( success )
@@ -852,7 +852,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
         report += "shift\n       ";
         sp->print( &report );
         
-        srcloc sloc = cflict->shift->token.sloc;
+        srcloc sloc = cflict->shift->tok.sloc;
         _errors->info( sloc, "%s", report.c_str() );
     }
     
@@ -862,7 +862,7 @@ void actions::report_conflict( state* s, const std::vector< conflict* >& conflic
 
         report.clear();
         report += "reduce ";
-        report += source->text( reduce.first->nonterminal->name );
+        report += source->text( reduce.first->nterm->name );
         report += "\n       ";
         reduce.second->print( &report );
         

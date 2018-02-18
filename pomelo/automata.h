@@ -85,9 +85,9 @@ struct automata
 
 struct conflict
 {
-    explicit conflict( terminal* terminal );
+    explicit conflict( terminal* term );
 
-    terminal* terminal;
+    terminal* term;
     transition* shift;
     std::vector< reduction* > reduce;
     bool reported;
@@ -102,7 +102,7 @@ struct action
     {
         transition* shift;
         reduction*  reduce;
-        conflict*   conflict;
+        conflict*   cflict;
     };
 };
 
@@ -125,12 +125,12 @@ struct state
 
 struct transition
 {
-    transition( state* prev, state* next, symbol* nsym, token token, bool conflicts );
+    transition( state* prev, state* next, symbol* nsym, token tok, bool conflicts );
 
     state* prev;
     state* next;
-    symbol* symbol;
-    token token;
+    symbol* sym;
+    token tok;
     std::vector< reducefrom* > rfrom; // links to reachable final transitions.
     std::vector< reducefrom* > rgoto; // link from final transition to nonterminal.
     uintptr_t visited;
@@ -147,9 +147,9 @@ struct transition
 
 struct reducefrom
 {
-    reducefrom( rule* rule, transition* nonterminal, transition* finalsymbol );
+    reducefrom( rule* drule, transition* nonterminal, transition* finalsymbol );
 
-    rule* rule;
+    rule* drule;
     transition* nonterminal; // transition shifting nonterminal symbol.
     transition* finalsymbol; // final transition before accepting nonterminal.
 };
@@ -161,9 +161,9 @@ struct reducefrom
 
 struct reduction
 {
-    explicit reduction( rule* rule );
+    explicit reduction( rule* drule );
 
-    rule* rule;
+    rule* drule;
     std::vector< terminal* > lookahead;
 };
 

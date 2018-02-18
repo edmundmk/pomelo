@@ -108,10 +108,10 @@ void automata::print( bool rgoto )
         {
             size_t iloc = state->closure->locations[ i ];
             const location& loc = syntax->locations[ iloc ];
-            printf( "<tr><td>%s →", syntax->source->text( loc.rule->nonterminal->name ) );
-            for ( size_t i = 0; i < loc.rule->locount - 1; ++i )
+            printf( "<tr><td>%s →", syntax->source->text( loc.drule->nterm->name ) );
+            for ( size_t i = 0; i < loc.drule->locount - 1; ++i )
             {
-                size_t jloc = loc.rule->lostart + i;
+                size_t jloc = loc.drule->lostart + i;
                 const location& loc = syntax->locations[ jloc ];
                 if ( iloc == jloc )
                 {
@@ -119,7 +119,7 @@ void automata::print( bool rgoto )
                 }
                 printf( " %s", syntax->source->text( loc.stoken ) );
             }
-            if ( ! loc.symbol )
+            if ( ! loc.sym )
             {
                 for ( const auto& reduction : state->reductions )
                 {
@@ -146,7 +146,7 @@ void automata::print( bool rgoto )
                     "state%p -> transplit%p [label=\"%s\" arrowhead=none];\n",
                     trans->prev,
                     trans,
-                    syntax->source->text( trans->symbol->name )
+                    syntax->source->text( trans->sym->name )
                 );
                 printf( "transplit%p -> state%p;\n", trans, trans->next );
             }
@@ -157,7 +157,7 @@ void automata::print( bool rgoto )
                     "state%p -> state%p [label=\"%s\"]\n",
                     trans->prev,
                     trans->next,
-                    syntax->source->text( trans->symbol->name )
+                    syntax->source->text( trans->sym->name )
                 );
             }
             
@@ -174,8 +174,8 @@ void automata::print( bool rgoto )
 }
 
 
-conflict::conflict( ::terminal* terminal )
-    :   terminal( terminal )
+conflict::conflict( terminal* term )
+    :   term( term )
     ,   shift( nullptr )
     ,   reported( false )
 {
@@ -194,27 +194,27 @@ state::state( closure_ptr&& closure )
 }
 
 
-transition::transition( state* prev, state* next, ::symbol* nsym, ::token token, bool conflicts )
+transition::transition( state* prev, state* next, symbol* nsym, token tok, bool conflicts )
     :   prev( prev )
     ,   next( next )
-    ,   symbol( nsym )
-    ,   token( token )
+    ,   sym( nsym )
+    ,   tok( tok )
     ,   visited( 0 )
     ,   conflicts( conflicts )
 {
 }
 
 
-reducefrom::reducefrom( ::rule* rule, transition* nonterminal, transition* finalsymbol )
-    :   rule( rule )
+reducefrom::reducefrom( rule* drule, transition* nonterminal, transition* finalsymbol )
+    :   drule( drule )
     ,   nonterminal( nonterminal )
     ,   finalsymbol( finalsymbol )
 {
 }
 
 
-reduction::reduction( ::rule* rule )
-    :   rule( rule )
+reduction::reduction( rule* drule )
+    :   drule( drule )
 {
 }
 
