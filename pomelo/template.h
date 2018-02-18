@@ -45,7 +45,7 @@ private:
     struct stack
     {
         int state;
-        piece* piece;
+        piece* head;
         stack* prev;
         stack* next;
     };

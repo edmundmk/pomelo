@@ -10,6 +10,7 @@
 #include "$(header)"
 #include <assert.h>
 #include <memory>
+#include <algorithm>
 
 
 
@@ -197,8 +198,8 @@ $(class_name)::~$(class_name)()
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
-?(token_type)                s->piece->values.push_back( value( s->state, v ) );
-!(token_type)                s->piece->values.push_back( value( s->state, empty() ) );
+?(token_type)                s->head->values.push_back( value( s->state, v ) );
+!(token_type)                s->head->values.push_back( value( s->state, empty() ) );
                 s->state = action;
                 break;
             }
@@ -227,12 +228,12 @@ $(class_name)::~$(class_name)()
                 if ( conflict[ 1 ] < STATE_COUNT )
                 {
                     // Create a new stack.
-                    z = new_stack( z, s->piece, s->state );
+                    z = new_stack( z, s->head, s->state );
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ 1 ];
-?(token_type)                    z->piece->values.push_back( value( z->state, v ) );
-!(token_type)                    z->piece->values.push_back( value( z->state, empty() ) );
+?(token_type)                    z->head->values.push_back( value( z->state, v ) );
+!(token_type)                    z->head->values.push_back( value( z->state, empty() ) );
                     z->state = action;
                     
                     // Ignore this stack until the next token.
@@ -243,7 +244,7 @@ $(class_name)::~$(class_name)()
                 for ( int i = 1; i < size; ++i )
                 {
                     // Create a new stack.
-                    z = new_stack( z, s->piece, s->state );
+                    z = new_stack( z, s->head, s->state );
                 
                     // Reduce using the rule.
                     int action = conflict[ i ];
@@ -292,39 +293,39 @@ void $(class_name)::reduce( stack* s, int rule )
 
     // Find length of rule and ensure this stack has at least that many values.
     size_t length = rule_info.length;
-    assert( s->piece->refcount == 0 );
-    while ( s->piece->values.size() < length )
+    assert( s->head->refcount == 0 );
+    while ( s->head->values.size() < length )
     {
-        piece* prev = s->piece->prev;
+        piece* prev = s->head->prev;
         assert( prev );
         
         if ( prev->refcount == 1 )
         {
             // Move all values from this piece to the previous one.
-            prev->values.reserve( prev->values.size() + s->piece->values.size() );
+            prev->values.reserve( prev->values.size() + s->head->values.size() );
             std::move
             (
-                s->piece->values.begin(),
-                s->piece->values.end(),
+                s->head->values.begin(),
+                s->head->values.end(),
                 std::back_inserter( prev->values )
             );
             
             // Move stack to from previous piece. to this piece.
-            std::swap( prev->values, s->piece->values );
+            std::swap( prev->values, s->head->values );
             
             // Unlink and delete previous piece.
-            s->piece->prev = prev->prev;
+            s->head->prev = prev->prev;
             delete prev;
         }
         else
         {
             // Copy values into this piece.
-            size_t rq_count = length - s->piece->values.size();
+            size_t rq_count = length - s->head->values.size();
             size_t cp_count = std::min( prev->values.size(), rq_count );
             size_t index = prev->values.size() - cp_count;
-            s->piece->values.insert
+            s->head->values.insert
             (
-                s->piece->values.begin(),
+                s->head->values.begin(),
                 prev->values.begin() + index,
                 prev->values.end()
             );
@@ -333,7 +334,7 @@ void $(class_name)::reduce( stack* s, int rule )
             if ( index > 0 )
             {
                 /*
-                          <- s->piece
+                          <- s->head
                     split
                           <- prev <- ...
                 */
@@ -341,7 +342,7 @@ void $(class_name)::reduce( stack* s, int rule )
                 // Create split piece and link it in.
                 piece* split = new piece{ 2, prev->prev };
                 prev->prev = split;
-                s->piece->prev = split;
+                s->head->prev = split;
                 
                 // Move prev's stack to the split piece.
                 std::swap( split->values, prev->values );
@@ -358,21 +359,21 @@ void $(class_name)::reduce( stack* s, int rule )
             else
             {
                 /*
-                               <- s->piece
+                               <- s->head
                     prev->prev
                                <- prev <- ...
                 */
                 
                 prev->refcount -= 1;
                 assert( prev->refcount > 0 );
-                s->piece->prev = prev->prev;
+                s->head->prev = prev->prev;
                 prev->prev->refcount += 1;
             }
         }
     }
     
     // Get pointer to values used to reduce.
-    std::vector< value >& values = s->piece->values;
+    std::vector< value >& values = s->head->values;
     assert( values.size() >= length );
     size_t index = values.size() - length;
     value* p = values.data() + index;
@@ -413,12 +414,12 @@ $(class_name)::stack* $(class_name)::new_stack( stack* list, piece* prev, int st
 void $(class_name)::delete_stack( stack* s )
 {
     // Delete stack pieces.
-    while ( s->piece && s->piece->refcount == 0 )
+    while ( s->head && s->head->refcount == 0 )
     {
-        piece* prev = s->piece->prev;
-        delete s->piece;
+        piece* prev = s->head->prev;
+        delete s->head;
         prev->refcount -= 1;
-        s->piece = prev;
+        s->head = prev;
     }
     
     // Unlink and then delete stack object itself.

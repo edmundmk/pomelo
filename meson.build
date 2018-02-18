@@ -6,7 +6,7 @@
 #
 
 
-project( 'pomelo', 'cpp' )
+project( 'pomelo', 'cpp', default_options: [ 'cpp_std=gnu++17' ] )
 
 sources = [
     'pomelo/actions.cpp',
@@ -29,10 +29,5 @@ sources += custom_target(
     command : [ find_program( 'geninc.sh' ), '@INPUT0@', '@INPUT1@', '@OUTPUT@' ]
 )
 
-executable(
-    'pomelo',
-    sources : sources,
-    override_options : [ 'cpp_std=gnu++17' ],
-    install : true
-)
+executable( 'pomelo', sources : sources, install : true )
 
