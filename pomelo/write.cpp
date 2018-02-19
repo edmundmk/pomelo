@@ -467,6 +467,7 @@ std::string write::replace( std::string line, terminal* token )
 {
     /*
         $$(token_name)
+        $$(raw_token_name)
         $$(token_value)
     */
 
@@ -485,6 +486,11 @@ std::string write::replace( std::string line, terminal* token )
             }
             r.replace( prefix + name );
         }
+        else if ( valname == "$$(raw_token_name)" )
+        {
+            std::string name = syntax->source->text( token->name );
+            r.replace( name );
+        }
         else if ( valname == "$$(token_value)" )
         {
             r.replace( std::to_string( token->value ) );
@@ -502,6 +508,7 @@ std::string write::replace( std::string line, nonterminal* nterm )
 {
     /*
         $$(nterm_name)
+        $$(raw_nterm_name)
         $$(nterm_value)
     */
     
@@ -520,6 +527,11 @@ std::string write::replace( std::string line, nonterminal* nterm )
                 prefix = "NTERM_";
             }
             r.replace( prefix + name );
+        }
+        else if ( valname == "$$(raw_nterm_name)" )
+        {
+            std::string name = syntax->source->text( nterm->name );
+            r.replace( name );
         }
         else if ( valname == "$$(nterm_value)" )
         {

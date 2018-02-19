@@ -52,6 +52,24 @@ $(rule_table)
 
 
 /*
+    Get names of symbols.
+*/
+
+const char* $(class_name)_symbol_name( int kind )
+{
+    switch ( kind )
+    {
+    case 0: return "$";
+    case $$(token_value): return "$$(raw_token_name)";
+    case $(token_count): return "@start";
+    case $$(nterm_value): return "$$(raw_nterm_name)";
+    }
+    return "";
+}
+
+
+
+/*
     A type for productions that don't provide one.
 */
 

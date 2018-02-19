@@ -21,6 +21,10 @@ enum
     $$(nterm_name) = $$(nterm_value),
 };
 
+
+const char* $(class_name)_symbol_name( int kind );
+
+
 class $(class_name)
 {
 public:
