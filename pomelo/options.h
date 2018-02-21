@@ -23,7 +23,8 @@ struct options
     bool parse( int argc, const char* argv[] );
     
     std::string source;
-    std::string output;
+    std::string output_c;
+    std::string output_h;
     bool syntax;
     bool graph;
     bool rgoto;

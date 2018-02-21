@@ -55,7 +55,7 @@ private:
     automata_ptr _automata;
     action_table_ptr _action_table;
     goto_table_ptr _goto_table;
-    std::string _header;
+    std::string _output_h;
     std::vector< terminal* > _tokens;
     std::vector< nonterminal* > _nterms;
     std::unordered_map< nonterminal*, ntype* > _nterm_lookup;

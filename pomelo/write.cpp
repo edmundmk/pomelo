@@ -20,11 +20,11 @@ namespace
 
 
 write::write( automata_ptr automata, action_table_ptr action_table,
-                goto_table_ptr goto_table, const std::string& output )
+                goto_table_ptr goto_table, const std::string& output_h )
     :   _automata( automata )
     ,   _action_table( action_table )
     ,   _goto_table( goto_table )
-    ,   _header( output )
+    ,   _output_h( output_h )
 {
 }
 
@@ -56,12 +56,11 @@ bool write::starts_with( const std::string& s, const std::string& z )
 void write::prepare()
 {
     // Munge header name.
-    size_t pos = _header.find_last_of( "/\\" );
+    size_t pos = _output_h.find_last_of( "/\\" );
     if ( pos != std::string::npos )
     {
-        _header = _header.substr( pos + 1 );
+        _output_h = _output_h.substr( pos + 1 );
     }
-    _header += ".h";
 
     // Build in-order list of terminals.
     for ( const auto& tsym : _automata->syntax->terminals )
@@ -395,7 +394,7 @@ std::string write::replace( std::string line )
         }
         else if ( valname == "$(header)" )
         {
-            r.replace( _header );
+            r.replace( _output_h );
         }
         else if ( valname == "$(class_name)" )
         {

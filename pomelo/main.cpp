@@ -73,13 +73,13 @@ int main( int argc, const char* argv[] )
     goto_table_ptr goto_table = actions->build_goto_table();
     
     write_ptr write = std::make_shared< ::write >(
-            automata, action_table, goto_table, options.output );
+            automata, action_table, goto_table, options.output_h );
     write->prepare();
     
     bool ok = true;
-    if ( options.output.size() )
+    if ( options.output_h.size() )
     {
-        FILE* header = fopen( ( options.output + ".h" ).c_str(), "w" );
+        FILE* header = fopen( options.output_h.c_str(), "w" );
         if ( ! header || ! write->write_header( header ) )
         {
             ok = false;
@@ -88,8 +88,18 @@ int main( int argc, const char* argv[] )
         {
             fclose( header );
         }
+    }
+    else
+    {
+        if ( ! write->write_header( stdout ) )
+        {
+            ok = false;
+        }
+    }
         
-        FILE* source = fopen( ( options.output + ".cpp" ).c_str(), "w" );
+    if ( options.output_c.size() )
+    {
+        FILE* source = fopen( options.output_c.c_str(), "w" );
         if ( ! source || ! write->write_source( source ) )
         {
             ok = false;
@@ -101,10 +111,6 @@ int main( int argc, const char* argv[] )
     }
     else
     {
-        if ( ! write->write_header( stdout ) )
-        {
-            ok = false;
-        }
         if ( ! write->write_source( stdout ) )
         {
             ok = false;

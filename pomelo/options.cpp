@@ -30,7 +30,8 @@ bool options::parse( int argc, const char* argv[] )
 {
     bool result = true;
     bool has_source = false;
-    bool has_output = false;
+    bool has_output_c = false;
+    bool has_output_h = false;
 
     for ( int i = 1; i < argc; ++i )
     {
@@ -56,19 +57,25 @@ bool options::parse( int argc, const char* argv[] )
         {
             conflicts = true;
         }
-        else if ( strcmp( arg, "-o" ) == 0 )
+        else if ( strcmp( arg, "-c" ) == 0 || strcmp( arg, "-h" ) == 0 )
         {
             ++i;
             if ( i < argc )
             {
-                arg = argv[ i ];
-                if ( ! has_output )
+                const char* path = argv[ i ];
+                if ( strcmp( arg, "-c" ) == 0 && ! has_output_c )
                 {
-                    output = arg;
+                    output_c = path;
+                    has_output_c = true;
+                }
+                else if ( strcmp( arg, "-h" ) == 0 && ! has_output_h )
+                {
+                    output_h = path;
+                    has_output_h = true;
                 }
                 else
                 {
-                    fprintf( stderr, "additional output argument '%s'\n", arg );
+                    fprintf( stderr, "additional output argument '%s'\n", path );
                     result = false;
                 }
             }
