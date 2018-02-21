@@ -184,17 +184,20 @@ struct $(class_name)::piece
 */
 
 ?(user_value)$(class_name)::$(class_name)( const user_value& u )
-?(user_value)    :   u( u )
-?(user_value)    ,   _anchor{ -1, nullptr, nullptr }
+?(user_value)    :   _anchor{ user_value(), -1, nullptr, &_anchor, &_anchor }
 !(user_value)$(class_name)::$(class_name)()
-!(user_value)    :   _anchor{ -1, nullptr, nullptr }
+!(user_value)    :   _anchor{ -1, nullptr, &_anchor, &_anchor }
 {
-    new_stack( &_anchor, nullptr, START_STATE );
+    piece* p = new piece { 1, nullptr };
+?(user_value)    stack* s = new stack { u, START_STATE, p, &_anchor, &_anchor };
+!(user_value)    stack* s = new stack { START_STATE, p, &_anchor, &_anchor };
+    _anchor.next = s;
+    _anchor.prev = s;
 }
 
 $(class_name)::~$(class_name)()
 {
-    while ( _anchor.next )
+    while ( _anchor.next != &_anchor )
     {
         delete_stack( _anchor.next );
     }
@@ -204,10 +207,8 @@ $(class_name)::~$(class_name)()
 !(token_type)void $(class_name)::parse( int token )
 {
     // Evaluate for each active parse stack.
-    for ( stack* s = _anchor.next; s; s = s->next )
+    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
     {
-        assert( s->state >= 0 );
-    
         // Loop until this parse fails or we manage to shift the token.
         while ( true )
         {
@@ -246,7 +247,7 @@ $(class_name)::~$(class_name)()
                 if ( conflict[ 1 ] < STATE_COUNT )
                 {
                     // Create a new stack.
-                    z = new_stack( z, s->head, s->state );
+                    z = split_stack( z, s );
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ 1 ];
@@ -261,8 +262,17 @@ $(class_name)::~$(class_name)()
                 // Other actions must be reductions.
                 for ( int i = 1; i < size; ++i )
                 {
-                    // Create a new stack.
-                    z = new_stack( z, s->head, s->state );
+                    if ( i < size - 1 )
+                    {
+                        // Create a new stack.
+                        z = split_stack( z, s );
+                    }
+                    else
+                    {
+                        // Continue using original stack.
+                        assert( z->next == s );
+                        z = s;
+                    }
                 
                     // Reduce using the rule.
                     int action = conflict[ i ];
@@ -275,7 +285,7 @@ $(class_name)::~$(class_name)()
                     // picked up on the next iteration of the main for loop,
                     // and the token consumed that way.
                 }
-                
+               
                 // Continue with the while loop using the first stack
                 // resulting from a reduction.
                 s = loop_stack;
@@ -412,21 +422,33 @@ void $(class_name)::reduce( stack* s, int rule )
     s->state = gotos;
 }
 
-?(token_type)void $(class_name)::error( int token, const token_type& v )
-!(token_type)void $(class_name)::error( int token )
+?(user_value)?(token_type)void $(class_name)::error( int token, const user_value& u, const token_type& v )
+?(user_value)!(token_type)void $(class_name)::error( int token, const user_value& u )
+!(user_value)?(token_type)void $(class_name)::error( int token, const token_type& v )
+!(user_value)!(token_type)void $(class_name)::error( int token )
 {
     $(error_report)
 }
 
-$(class_name)::stack* $(class_name)::new_stack( stack* list, piece* prev, int state )
+?(user_value)$(class_name)::user_value $(class_name)::user_split( const user_value& u )
+?(user_value){
+?(user_value)    $(user_split)
+?(user_value)}
+
+
+$(class_name)::stack* $(class_name)::split_stack( stack* prev, stack* s )
 {
     // Create new piece to be the head of the stack.
-    piece* p = new piece { 1, prev };
-    stack* s = new stack { state, p, list, list->next };
+    piece* p = new piece { 1, s->head };
     p->prev->refcount += 1;
-    s->prev->next = s;
-    s->next->prev = s;
-    return s;
+
+    // Create new stack.
+?(user_value)    stack* split = new stack { user_split( list->u ), s->state, p, prev, prev->next };
+!(user_value)    stack* split = new stack { s->state, p, prev, prev->next };
+    split->prev->next = split;
+    split->next->prev = split;
+
+    return split;
 }
 
 void $(class_name)::delete_stack( stack* s )
@@ -436,8 +458,11 @@ void $(class_name)::delete_stack( stack* s )
     {
         piece* prev = s->head->prev;
         delete s->head;
-        prev->refcount -= 1;
         s->head = prev;
+        if ( s->head )
+        {
+            s->head->refcount -= 1;
+        }
     }
     
     // Unlink and then delete stack object itself.

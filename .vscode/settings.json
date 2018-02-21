@@ -9,7 +9,8 @@
         "system_error": "cpp",
         "type_traits": "cpp",
         "tuple": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "*.tcc": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -66,6 +66,7 @@ struct syntax
     source_ptr source;
     directive include;
     directive user_value;
+    directive user_split;
     directive class_name;
     directive token_type;
     directive token_prefix;

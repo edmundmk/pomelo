@@ -48,6 +48,7 @@ private:
     
     struct stack
     {
+?(user_value)        user_value u;
         int state;
         piece* head;
         stack* prev;
@@ -57,13 +58,14 @@ private:
     $$(rule_type) $$(rule_name)($$(rule_param));
     
     void reduce( stack* s, int rule );
-?(token_type)    void error( int token, const token_type& v );
-!(token_type)    void error( int token );
-    
-    stack* new_stack( stack* list, piece* prev, int state );
+?(user_value)?(token_type)    void error( int token, const user_value& u, const token_type& v );
+?(user_value)!(token_type)    void error( int token, const user_value& u );
+!(user_value)?(token_type)    void error( int token, const token_type& v );
+!(user_value)!(token_type)    void error( int token );
+?(user_value)    user_value user_split( const user_value& u );
+    stack* split_stack( stack* prev, stack* s );
     void delete_stack( stack* s );
     
-?(user_value)    user_value u;
     stack _anchor;
 
 };

@@ -169,6 +169,10 @@ void parser::parse_directive()
     {
         directive = &_syntax->user_value;
     }
+    else if ( strcmp( text, "user_split" ) == 0 )
+    {
+        directive = &_syntax->user_split;
+    }
     else if ( strcmp( text, "class_name" ) == 0 )
     {
         directive = &_syntax->class_name;

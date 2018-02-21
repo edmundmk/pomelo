@@ -222,19 +222,32 @@ bool write::write_template( FILE* f, char* source, size_t length, bool header )
             syntax_ptr syntax = _automata->syntax;
 
             bool skip = false;
-            skip = skip || ( starts_with( line, "?(user_value)" ) && trim( syntax->user_value.text ).empty() );
-            skip = skip || ( starts_with( line, "!(user_value)" ) && trim( syntax->user_value.text ).size() );
-            skip = skip || ( starts_with( line, "?(token_type)" ) && trim( syntax->token_type.text ).empty() );
-            skip = skip || ( starts_with( line, "!(token_type)" ) && trim( syntax->token_type.text ).size() );
-            
+
+            if ( starts_with( line, "?(user_value)" ) )
+            {
+                skip = skip || trim( syntax->user_value.text ).empty();
+                line = line.substr( line.find( ')' ) + 1 );
+            }
+            if ( starts_with( line, "!(user_value)" ) )
+            {
+                skip = skip || ! trim( syntax->user_value.text ).empty();
+                line = line.substr( line.find( ')' ) + 1 );
+            }
+            if ( starts_with( line, "?(token_type)" ) )
+            {
+                skip = skip || trim( syntax->token_type.text ).empty();
+                line = line.substr( line.find( ')' ) + 1 );
+            }
+            if ( starts_with( line, "!(token_type)" ) )
+            {
+                skip = skip || ! trim( syntax->token_type.text ).empty();
+                line = line.substr( line.find( ')' ) + 1 );
+            }
+
             if ( skip )
             {
                 i = iend;
                 continue;
-            }
-            else
-            {
-                line = line.substr( line.find( ')' ) + 1 );
             }
         }
 
@@ -353,6 +366,7 @@ std::string write::replace( std::string line )
         $(header)
         $(class_name)
         $(user_value)
+        $(user_split)
         $(token_type)
         $(start_state)
         $(error_action)
@@ -395,6 +409,15 @@ std::string write::replace( std::string line )
         else if ( valname == "$(user_value)" )
         {
             r.replace( trim( syntax->user_value.text ) );
+        }
+        else if ( valname == "$(user_split)" )
+        {
+            std::string split = trim( syntax->user_split.text );
+            if ( split.empty() )
+            {
+                split = "return u;";
+            }
+            r.replace( split );
         }
         else if ( valname == "$(token_type)" )
         {
@@ -612,6 +635,10 @@ std::string write::replace( std::string line, rule* rule, bool header )
         else if ( valname == "$$(rule_param)" )
         {
             std::string prm;
+            if ( trim( syntax->user_value.text ).size() )
+            {
+                prm += " const user_value& u";
+            }
             for ( size_t i = 0; i < rule->locount - 1; ++i )
             {
                 size_t iloc = rule->lostart + i;
@@ -673,6 +700,10 @@ std::string write::replace( std::string line, rule* rule, bool header )
         else if ( valname == "$$(rule_args)" )
         {
             std::string args;
+            if ( trim( syntax->user_value.text ).size() )
+            {
+                args += " s->u";
+            }
             for ( size_t i = 0; i < rule->locount - 1; ++i )
             {
                 size_t iloc = rule->lostart + i;
