@@ -213,7 +213,7 @@ void parser::parse_directive()
         expected( "directive" );
     }
     
-    if ( ! directive->text.empty() )
+    if ( directive->specified )
     {
         _errors->error( dloc, "repeated directive '%%%s'", text );
     }
@@ -229,6 +229,7 @@ void parser::parse_directive()
     }
 
     directive->text = _block.size() ? _block : " ";
+    directive->specified = true;
     next();
 }
 

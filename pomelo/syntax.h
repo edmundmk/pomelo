@@ -43,8 +43,11 @@ enum associativity
 
 struct directive
 {
+    directive();
+
     token           keyword;
     std::string     text;
+    bool            specified;
 };
 
 struct location

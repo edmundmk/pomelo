@@ -9,6 +9,15 @@
 #include "syntax.h"
 
 
+
+
+directive::directive()
+    :   specified( false )
+{
+}
+
+
+
 syntax::syntax( source_ptr source )
     :   source( source )
     ,   start( nullptr )

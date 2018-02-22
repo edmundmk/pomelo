@@ -89,7 +89,7 @@ void write::prepare()
     
     // If there is no user-specified token type, then add the empty type.
     std::unordered_map< std::string, ntype* > lookup;
-    if ( trim( _automata->syntax->token_type.text ).empty() )
+    if ( _automata->syntax->token_type.specified )
     {
         std::unique_ptr< ntype > n = std::make_unique< ntype >();
         n->ntype = "empty";
@@ -226,22 +226,22 @@ bool write::write_template( FILE* f, char* source, size_t length, bool header )
 
             if ( starts_with( line, "?(user_value)" ) )
             {
-                skip = skip || trim( syntax->user_value.text ).empty();
+                skip = skip || ! syntax->user_value.specified;
                 line = line.substr( line.find( ')' ) + 1 );
             }
             if ( starts_with( line, "!(user_value)" ) )
             {
-                skip = skip || ! trim( syntax->user_value.text ).empty();
+                skip = skip || syntax->user_value.specified;
                 line = line.substr( line.find( ')' ) + 1 );
             }
             if ( starts_with( line, "?(token_type)" ) )
             {
-                skip = skip || trim( syntax->token_type.text ).empty();
+                skip = skip || ! syntax->token_type.specified;
                 line = line.substr( line.find( ')' ) + 1 );
             }
             if ( starts_with( line, "!(token_type)" ) )
             {
-                skip = skip || ! trim( syntax->token_type.text ).empty();
+                skip = skip || syntax->token_type.specified;
                 line = line.substr( line.find( ')' ) + 1 );
             }
 
@@ -412,11 +412,11 @@ std::string write::replace( std::string line )
         }
         else if ( valname == "$(class_name)" )
         {
-            std::string name = trim( syntax->class_name.text );
-            if ( name.empty() )
-            {
+            std::string name;
+            if ( syntax->class_name.specified )
+                name = trim( syntax->class_name.text );
+            else
                 name = "parser";
-            }
             r.replace( name );
         }
         else if ( valname == "$(user_value)" )
@@ -425,11 +425,11 @@ std::string write::replace( std::string line )
         }
         else if ( valname == "$(user_split)" )
         {
-            std::string split = trim( syntax->user_split.text );
-            if ( split.empty() )
-            {
+            std::string split;
+            if ( syntax->user_split.specified )
+                split = trim( syntax->user_split.text );
+            else
                 split = "return u;";
-            }
             r.replace( split );
         }
         else if ( valname == "$(token_type)" )
@@ -515,11 +515,11 @@ std::string write::replace( std::string line, terminal* token )
         if ( valname == "$$(token_name)" )
         {
             std::string name = syntax->source->text( token->name );
-            std::string prefix = trim( syntax->token_prefix.text );
-            if ( prefix.empty() )
-            {
+            std::string prefix;
+            if ( syntax->token_prefix.specified )
+                prefix = trim( syntax->token_prefix.text );
+            else
                 prefix = "TOKEN_";
-            }
             r.replace( prefix + name );
         }
         else if ( valname == "$$(raw_token_name)" )
@@ -557,11 +557,11 @@ std::string write::replace( std::string line, nonterminal* nterm )
         {
             std::string name = syntax->source->text( nterm->name );
             std::transform( name.begin(), name.end(), name.begin(), ::toupper );
-            std::string prefix = trim( syntax->nterm_prefix.text );
-            if ( prefix.empty() )
-            {
+            std::string prefix;
+            if ( syntax->nterm_prefix.specified )
+                prefix = trim( syntax->nterm_prefix.text );
+            else
                 prefix = "NTERM_";
-            }
             r.replace( prefix + name );
         }
         else if ( valname == "$$(raw_nterm_name)" )
@@ -632,11 +632,11 @@ std::string write::replace( std::string line, rule* rule, bool header )
             std::string ntype = _nterm_lookup.at( rule->nterm )->ntype;
             if ( ! header && ntype == "empty" )
             {
-                std::string name = trim( syntax->class_name.text );
-                if ( name.empty() )
-                {
+                std::string name;
+                if ( syntax->class_name.specified )
+                    name = trim( syntax->class_name.text );
+                else
                     name = "parser";
-                }
                 ntype = name + "::" + ntype;
             }
             r.replace( ntype );
@@ -648,7 +648,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
         else if ( valname == "$$(rule_param)" )
         {
             std::string prm;
-            if ( trim( syntax->user_value.text ).size() )
+            if ( syntax->user_value.specified )
             {
                 prm += " const user_value& u";
             }
@@ -713,7 +713,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
         else if ( valname == "$$(rule_args)" )
         {
             std::string args;
-            if ( trim( syntax->user_value.text ).size() )
+            if ( syntax->user_value.specified )
             {
                 args += " s->u";
             }
