@@ -44,7 +44,7 @@ const unsigned short GOTO[] =
 $(goto_table)
 };
 
-const struct { unsigned short nterm; unsigned short length; } RULE[] =
+const struct { unsigned short nterm; unsigned short length; const char* name; } RULE[] =
 {
 $(rule_table)
 };
@@ -132,7 +132,7 @@ private:
     {
         switch ( _kind )
         {
-?(token_type)        case -1: ( (token_type*)_storage )->~token_type() ); break;
+?(token_type)        case -1: ( (token_type*)_storage )->~token_type(); break;
         case $$(ntype_value): ( ($$(ntype_type)*)_storage )->~$$(ntype_type)(); break;
         }
     }
@@ -141,15 +141,18 @@ private:
     int _kind;
     std::aligned_storage_t
         <
+        std::max
+        ({
 ?(token_type)              sizeof( token_type )
 !(token_type)              0
-            + sizeof( $$(ntype_type) )
+            , sizeof( $$(ntype_type) )
+        })
         ,
         std::max
         ({
 ?(token_type)              alignof( token_type )
 !(token_type)              0
-            + alignof( $$(ntype_type) )
+            , alignof( $$(ntype_type) )
         })
         >
     _storage[ 1 ];
@@ -188,7 +191,7 @@ struct $(class_name)::piece
 !(user_value)$(class_name)::$(class_name)()
 !(user_value)    :   _anchor{ -1, nullptr, &_anchor, &_anchor }
 {
-    piece* p = new piece { 1, nullptr };
+    piece* p = new piece { 0, nullptr };
 ?(user_value)    stack* s = new stack { u, START_STATE, p, &_anchor, &_anchor };
 !(user_value)    stack* s = new stack { START_STATE, p, &_anchor, &_anchor };
     _anchor.next = s;
@@ -300,8 +303,10 @@ $(class_name)::~$(class_name)()
                 }
                 
                 // Otherwise report the error.
-?(token_type)                error( token, v );
-!(token_type)                error( token );
+?(user_value)?(token_type)                error( token, s->u, v );
+?(user_value)!(token_type)                error( token, s->u );
+!(user_value)?(token_type)                error( token, v );
+!(user_value)!(token_type)                error( token );
                 
                 // TODO: error recovery.
                 return;
@@ -310,6 +315,7 @@ $(class_name)::~$(class_name)()
             {
                 // Everything is fine, clean up by destroying the stack.
                 delete_stack( ( s = s->prev )->next );
+                break;
             }
         }
     }
@@ -318,6 +324,7 @@ $(class_name)::~$(class_name)()
 void $(class_name)::reduce( stack* s, int rule )
 {
     const auto& rule_info = RULE[ rule ];
+    printf( "%s\n", rule_info.name );
 
     // Find length of rule and ensure this stack has at least that many values.
     size_t length = rule_info.length;
@@ -416,7 +423,7 @@ void $(class_name)::reduce( stack* s, int rule )
     values.erase( values.begin() + index + 1, values.end() );
     
     // Find state we've returned to after reduction, and goto next one.
-    int state = p[ index ].state();
+    int state = values[ index ].state();
     int gotos = GOTO[ state * NTERM_COUNT + rule_info.nterm ];
     assert( gotos < STATE_COUNT );
     s->state = gotos;
@@ -439,11 +446,11 @@ void $(class_name)::reduce( stack* s, int rule )
 $(class_name)::stack* $(class_name)::split_stack( stack* prev, stack* s )
 {
     // Create new piece to be the head of the stack.
-    piece* p = new piece { 1, s->head };
+    piece* p = new piece { 0, s->head };
     p->prev->refcount += 1;
 
     // Create new stack.
-?(user_value)    stack* split = new stack { user_split( list->u ), s->state, p, prev, prev->next };
+?(user_value)    stack* split = new stack { user_split( s->u ), s->state, p, prev, prev->next };
 !(user_value)    stack* split = new stack { s->state, p, prev, prev->next };
     split->prev->next = split;
     split->next->prev = split;

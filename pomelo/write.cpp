@@ -786,7 +786,7 @@ std::string write::write_rule_table()
         s += std::to_string( rule->nterm->value - token_count );
         s += ", ";
         s += std::to_string( (int)rule->locount - 1 );
-        s += " }, // ";
+        s += ", \"";
 
         s += source->text( rule->nterm->name );
         s += " :";
@@ -798,7 +798,7 @@ std::string write::write_rule_table()
             s += source->text( loc.sym->name );
         }
         
-        s += "\n";
+        s += "\" },\n";
     }
     
     return s;
