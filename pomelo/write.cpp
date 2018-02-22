@@ -135,7 +135,9 @@ void write::prepare()
 /*
     Here are the interpolated values we fill in in the template:
  
+        $(header)
         $(include)
+        $(include_guard)
         $(class_name)
         $(user_value)
         $(token_type)
@@ -361,8 +363,9 @@ struct replacer
 std::string write::replace( std::string line )
 {
     /*
-        $(include)
         $(header)
+        $(include)
+        $(include_guard)
         $(class_name)
         $(user_value)
         $(user_split)
@@ -388,13 +391,24 @@ std::string write::replace( std::string line )
     std::string_view valname;
     while ( r.next( valname ) )
     {
-        if ( valname == "$(include)" )
+        if ( valname == "$(header)" )
+        {
+            r.replace( _output_h );
+        }
+        else if ( valname == "$(include)" )
         {
             r.replace( trim( syntax->include.text ) );
         }
-        else if ( valname == "$(header)" )
+        else if ( valname == "$(include_guard)" )
         {
-            r.replace( _output_h );
+            std::string guard = _output_h;
+            std::transform( guard.begin(), guard.end(), guard.begin(), ::toupper );
+            size_t period = guard.find( '.' );
+            if ( period != std::string::npos )
+            {
+                guard[ period ] = '_';
+            }
+            r.replace( guard );
         }
         else if ( valname == "$(class_name)" )
         {

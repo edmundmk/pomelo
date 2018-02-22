@@ -6,6 +6,8 @@
 //  Copyright © 2018 Edmund Kapusniak. All rights reserved.
 //
 
+#ifndef $(include_guard)
+#define $(include_guard)
 
 #include <vector>
 
@@ -70,3 +72,4 @@ private:
 
 };
 
+#endif
