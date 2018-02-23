@@ -600,6 +600,12 @@ std::string write::replace( std::string line, ntype* ntype )
         $$(ntype_value)
     */
     
+    if ( ntype->ntype == "std::nullptr_t" && line.find( "$$(ntype_destroy)" ) != std::string::npos )
+    {
+        // clang complains about calling ~nullptr_t().
+        return "";
+    }
+    
     replacer r( line, "$$(" );
     std::string_view valname;
     while ( r.next( valname ) )
