@@ -305,6 +305,10 @@ void parser::parse_nonterminal()
         else
         {
             expected( "rule or ']'" );
+            if ( _lexed == EOF )
+            {
+                break;
+            }
             next();
         }
     }
@@ -382,7 +386,7 @@ void parser::parse_rule( nonterminal* nonterminal )
         else
         {
             expected( "symbol or '.'" );
-            if ( _lexed == ']' )
+            if ( _lexed == ']' || _lexed == EOF )
             {
                 break;
             }
@@ -609,6 +613,11 @@ void parser::next()
                 else if ( c == '\n' )
                 {
                     _syntax->source->new_line( _sloc );
+                }
+                else if ( c == EOF )
+                {
+                    _errors->error( _tloc, "unterminated code block" );
+                    break;
                 }
                 
                 _block.push_back( c );
