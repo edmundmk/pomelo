@@ -19,11 +19,18 @@ namespace
 
 
 
-write::write( automata_ptr automata, action_table_ptr action_table,
-                goto_table_ptr goto_table, const std::string& output_h )
+write::write
+    (
+        automata_ptr automata,
+        action_table_ptr action_table,
+        goto_table_ptr goto_table,
+        const std::string& source,
+        const std::string& output_h
+    )
     :   _automata( automata )
     ,   _action_table( action_table )
     ,   _goto_table( goto_table )
+    ,   _source( source )
     ,   _output_h( output_h )
 {
 }
@@ -87,25 +94,28 @@ void write::prepare()
     );
     
     
-    // If there is no user-specified token type, then add the empty type.
+    // Add the token type.
     std::unordered_map< std::string, ntype* > lookup;
+    std::unique_ptr< ntype > n = std::make_unique< ntype >();
+    std::string type;
     if ( _automata->syntax->token_type.specified )
-    {
-        std::unique_ptr< ntype > n = std::make_unique< ntype >();
-        n->ntype = "empty";
-        n->value = (int)_ntypes.size();
-        ntype* resolved = n.get();
-        lookup.emplace( "empty", resolved );
-        _ntypes.push_back( std::move( n ) );
-    }
+        type = trim( _automata->syntax->token_type.text );
+    else
+        type = "std::nullptr_t";
+    
+    ntype* resolved = n.get();
+    n->ntype = type;
+    n->value = (int)_ntypes.size();
+    lookup.emplace( n->ntype, resolved );
+    _ntypes.push_back( std::move( n ) );
     
     // Work out nonterminal types for each nonterminal.
     for ( nonterminal* nterm : _nterms )
     {
         std::string type = trim( nterm->type );
-        if ( nterm->type.empty() )
+        if ( type.empty() )
         {
-            type = "empty";
+            type = "std::nullptr_t";
         }
     
         ntype* resolved;
@@ -171,6 +181,7 @@ void write::prepare()
     Per-non-terminal-type:
  
         $$(ntype_type)
+        $$(ntype_destroy)
         $$(ntype_value)
  
     Per-rule:
@@ -597,6 +608,16 @@ std::string write::replace( std::string line, ntype* ntype )
         {
             r.replace( ntype->ntype );
         }
+        else if ( valname == "$$(ntype_destroy)" )
+        {
+            std::string destroy = ntype->ntype;
+            size_t pos = destroy.find_last_of( ':' );
+            if ( pos != std::string::npos )
+            {
+                destroy = destroy.substr( pos + 1 );
+            }
+            r.replace( destroy );
+        }
         else if ( valname == "$$(ntype_value)" )
         {
             r.replace( std::to_string( ntype->value ) );
@@ -629,17 +650,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
     {
         if ( valname == "$$(rule_type)" )
         {
-            std::string ntype = _nterm_lookup.at( rule->nterm )->ntype;
-            if ( ! header && ntype == "empty" )
-            {
-                std::string name;
-                if ( syntax->class_name.specified )
-                    name = trim( syntax->class_name.text );
-                else
-                    name = "parser";
-                ntype = name + "::" + ntype;
-            }
-            r.replace( ntype );
+            r.replace( _nterm_lookup.at( rule->nterm )->ntype );
         }
         else if ( valname == "$$(rule_name)" )
         {
@@ -688,10 +699,24 @@ std::string write::replace( std::string line, rule* rule, bool header )
         }
         else if ( valname == "$$(rule_body)" )
         {
-            std::string body = trim( rule->action );
-            if ( body.empty() )
+            std::string body;
+            if ( rule->actspecified )
             {
-                body = "return {};";
+                if ( rule->actline >= 0 )
+                {
+                    body += "\n#line ";
+                    body += std::to_string( rule->actline );
+                    body += " \"";
+                    body += _source;
+                    body += "\"\n";
+                }
+                body += rule->action;
+            }
+            else
+            {
+                body += "return ";
+                body += _nterm_lookup.at( rule->nterm )->ntype;
+                body += "();";
             }
             r.replace( body );
         }
@@ -732,7 +757,17 @@ std::string write::replace( std::string line, rule* rule, bool header )
                 }
                 args += " p[ ";
                 args += std::to_string( i );
-                args += " ].move()";
+                args += " ].move< ";
+                if ( loc.sym->is_terminal )
+                {
+                    args += "token_type";
+                }
+                else
+                {
+                    nonterminal* nterm = (nonterminal*)loc.sym;
+                    args += _nterm_lookup.at( nterm )->ntype;
+                }
+                args += " >()";
             }
             if ( args.size() )
             {

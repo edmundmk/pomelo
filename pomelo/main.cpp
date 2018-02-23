@@ -72,8 +72,14 @@ int main( int argc, const char* argv[] )
     action_table_ptr action_table = actions->build_action_table();
     goto_table_ptr goto_table = actions->build_goto_table();
     
-    write_ptr write = std::make_shared< ::write >(
-            automata, action_table, goto_table, options.output_h );
+    write_ptr write = std::make_shared< ::write >
+        (
+            automata,
+            action_table,
+            goto_table,
+            options.source,
+            options.output_h
+        );
     write->prepare();
     
     bool ok = true;

@@ -416,7 +416,10 @@ void parser::parse_rule( nonterminal* nonterminal )
 
     if ( _lexed == BLOCK )
     {
+        file_line line = _syntax->source->source_location( _tloc );
+        rule->actline = line.line;
         rule->action = _block;
+        rule->actspecified = true;
         next();
     }
 

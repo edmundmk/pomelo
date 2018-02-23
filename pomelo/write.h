@@ -22,8 +22,14 @@ class write
 {
 public:
 
-    write( automata_ptr automata, action_table_ptr action_table,
-            goto_table_ptr goto_table, const std::string& output );
+    write
+    (
+        automata_ptr automata,
+        action_table_ptr action_table,
+        goto_table_ptr goto_table,
+        const std::string& source,
+        const std::string& output
+    );
     ~write();
 
     void prepare();
@@ -55,6 +61,7 @@ private:
     automata_ptr _automata;
     action_table_ptr _action_table;
     goto_table_ptr _goto_table;
+    std::string _source;
     std::string _output_h;
     std::vector< terminal* > _tokens;
     std::vector< nonterminal* > _nterms;

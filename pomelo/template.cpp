@@ -70,16 +70,6 @@ const char* $(class_name)_symbol_name( int kind )
 
 
 /*
-    A type for productions that don't provide one.
-*/
-
-struct $(class_name)::empty
-{
-};
-
-
-
-/*
     A value on the parser stack.  Can hold value of a token or of a production.
 */
 
@@ -90,9 +80,7 @@ public:
     value()                                 : _state( -1 ), _kind( -2 ) {}
     explicit value( int s )                 : _state( s ), _kind( -2 ) {}
 
-?(token_type)    value( int s, const token_type& v )     : _state( s ), _kind( -1 ) { new ( (token_type*)_storage ) token_type( v ); }
     value( int s, $$(ntype_type)&& v )      : _state( s ), _kind( $$(ntype_value) ) { new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( std::move( v ) ); }
-    value( int s, const $$(ntype_type)& v ) : _state( s ), _kind( $$(ntype_value) ) { new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v ); }
     
     value( value&& v )                      : _state( v._state ) { construct( std::move( v ) ); }
     value( const value& v )                 : _state( v._state ) { construct( v ); }
@@ -113,7 +101,6 @@ private:
         _kind = v._kind;
         switch ( _kind )
         {
-?(token_type)        case -1: new ( (token_type*)_storage ) token_type( v.move< token_type >() ); break;
         case $$(ntype_value): new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v.move< $$(ntype_type) >() ); break;
         }
     }
@@ -123,7 +110,6 @@ private:
         _kind = v._kind;
         switch ( _kind )
         {
-?(token_type)        case -1: new ( (token_type*)_storage ) token_type( v.get< token_type >() ); break;
         case $$(ntype_value): new ( ($$(ntype_type)*)_storage ) $$(ntype_type)( v.get< $$(ntype_type) >() ); break;
         }
     }
@@ -132,8 +118,7 @@ private:
     {
         switch ( _kind )
         {
-?(token_type)        case -1: ( (token_type*)_storage )->~token_type(); break;
-        case $$(ntype_value): ( ($$(ntype_type)*)_storage )->~$$(ntype_type)(); break;
+        case $$(ntype_value): ( ($$(ntype_type)*)_storage )->~$$(ntype_destroy)(); break;
         }
     }
 
@@ -143,15 +128,13 @@ private:
         <
         std::max
         ({
-?(token_type)              sizeof( token_type )
-!(token_type)              0
+            (size_t)0
             , sizeof( $$(ntype_type) )
         })
         ,
         std::max
         ({
-?(token_type)              alignof( token_type )
-!(token_type)              0
+            (size_t)0
             , alignof( $$(ntype_type) )
         })
         >
@@ -220,8 +203,9 @@ $(class_name)::~$(class_name)()
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
-?(token_type)                s->head->values.push_back( value( s->state, v ) );
-!(token_type)                s->head->values.push_back( value( s->state, empty() ) );
+?(token_type)                token_type tokval = v;
+?(token_type)                s->head->values.push_back( value( s->state, std::move( tokval ) ) );
+!(token_type)                s->head->values.push_back( value( s->state, std::nullptr_t() ) );
                 s->state = action;
                 break;
             }
@@ -254,8 +238,9 @@ $(class_name)::~$(class_name)()
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ 1 ];
-?(token_type)                    z->head->values.push_back( value( z->state, v ) );
-!(token_type)                    z->head->values.push_back( value( z->state, empty() ) );
+?(token_type)                    token_type tokval = v;                    
+?(token_type)                    z->head->values.push_back( value( z->state, std::move( tokval ) ) );
+!(token_type)                    z->head->values.push_back( value( z->state, std::nullptr_t() ) );
                     z->state = action;
                     
                     // Ignore this stack until the next token.

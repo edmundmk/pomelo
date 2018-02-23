@@ -145,6 +145,8 @@ rule::rule( nonterminal* nterm )
     ,   precedence( nullptr )
     ,   precetoken( NULL_TOKEN )
     ,   index( -1 )
+    ,   actline( -1 )
+    ,   actspecified( false )
     ,   conflicts( false )
     ,   reachable( false )
 {

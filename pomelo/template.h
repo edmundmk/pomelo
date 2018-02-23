@@ -44,8 +44,7 @@ public:
 
 private:
 
-    struct empty;
-    class  value;
+    class value;
     struct piece;
     
     struct stack

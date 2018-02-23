@@ -119,8 +119,10 @@ struct rule
     size_t          locount;
     terminal*       precedence;
     token           precetoken;
-    std::string     action;
     int             index;
+    int             actline;
+    std::string     action;
+    bool            actspecified;
     bool            conflicts;
     bool            reachable;
 };
