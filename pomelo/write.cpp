@@ -717,6 +717,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
                     body += "\"\n";
                 }
                 body += rule->action;
+                body += "\n";
             }
             else
             {
