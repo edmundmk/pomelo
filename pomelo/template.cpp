@@ -281,7 +281,7 @@ $(class_name)::~$(class_name)()
             else if ( action == ERROR_ACTION )
             {
                 // If this is not the only stack, then destroy the stack.
-                if ( s->next == &_anchor && s->prev == &_anchor )
+                if ( s->next != &_anchor || s->prev != &_anchor )
                 {
                     delete_stack( ( s = s->prev )->next );
                     break;

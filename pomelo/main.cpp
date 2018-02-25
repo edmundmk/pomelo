@@ -46,7 +46,7 @@ int main( int argc, const char* argv[] )
     
     if ( options.graph )
     {
-        automata->print( options.rgoto );
+        automata->print_graph( options.rgoto );
     }
     
     if ( errors->has_error() )
@@ -60,6 +60,11 @@ int main( int argc, const char* argv[] )
     if ( options.actions )
     {
         actions->print();
+    }
+
+    if ( options.dump )
+    {
+        automata->print_dump();
     }
     
     actions->report_conflicts();

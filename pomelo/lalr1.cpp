@@ -370,7 +370,7 @@ void lalr1::add_reducefroms( transition* nonterm )
             reducefrom_ptr rfrom = std::make_unique< reducefrom >( rule, nonterm, fsymbol );
             nonterm->rfrom.push_back( rfrom.get() );
             fsymbol->rgoto.push_back( rfrom.get() );
-            _automata->reducefrom.push_back( std::move( rfrom ) );
+            _automata->reducefroms.push_back( std::move( rfrom ) );
         }
     }
 }
@@ -453,7 +453,7 @@ void lalr1::direct_lookahead( state* state )
     }
 
     // Direct lookahead from a state is all terminal symbols on a transition
-    // out of a state, plus the direct lookahead from any successor state where
+    // out of a state, plus the lookahead from any successor state where
     // the transition symbol is eraseable.
     state->visited = _automata->visited;
     for ( transition* trans : state->next )
@@ -464,7 +464,7 @@ void lalr1::direct_lookahead( state* state )
         }
         else if ( ( (nonterminal*)trans->sym )->erasable )
         {
-            direct_lookahead( trans->next );
+            follow_lookahead( trans );
         }
     }
 }

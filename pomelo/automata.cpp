@@ -95,7 +95,7 @@ void automata::ensure_distances()
 }
 
 
-void automata::print( bool rgoto )
+void automata::print_graph( bool rgoto )
 {
     // Print out a graphviz dot file.
     printf( "digraph\n{\n" );
@@ -163,15 +163,63 @@ void automata::print( bool rgoto )
             
             if ( rgoto )
             {
-                for ( ::reducefrom* reducefrom : trans->rgoto )
+                for ( reducefrom* rfrom : trans->rgoto )
                 {
-                    printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", trans, reducefrom->nonterminal );
+                    printf( "transplit%p -> transplit%p [style=dotted arrowhead=empty];\n", trans, rfrom->nonterminal );
                 }
             }
         }
     }
     printf( "}\n" );
 }
+
+void automata::print_dump()
+{
+    for ( const auto& state : states )
+    {
+        printf( "STATE %d\n", state->index );
+        for ( size_t i = 0; i < state->closure->size; ++i )
+        {
+            size_t iloc = state->closure->locations[ i ];
+            const location& loc = syntax->locations[ iloc ];
+            printf( "%s →", syntax->source->text( loc.drule->nterm->name ) );
+            for ( size_t i = 0; i < loc.drule->locount - 1; ++i )
+            {
+                size_t jloc = loc.drule->lostart + i;
+                const location& loc = syntax->locations[ jloc ];
+                if ( iloc == jloc )
+                {
+                    printf( " ·" );
+                }
+                printf( " %s", syntax->source->text( loc.stoken ) );
+            }
+            if ( ! loc.sym )
+            {
+                for ( const auto& reduction : state->reductions )
+                {
+                    printf( " [" );
+                    for ( const auto& terminal : reduction->lookahead )
+                    {
+                        printf( " %s", syntax->source->text( terminal->name ) );
+                    }
+                    printf( " ]" );
+                }
+            }
+            printf( "\n" );
+        }
+        for ( transition* trans : state->next )
+        {
+            printf
+            (
+                "    %s -> %d\n",
+                syntax->source->text( trans->sym->name ),
+                trans->next->index
+            );
+        }
+        printf( "\n" );
+    }
+}
+
 
 
 conflict::conflict( terminal* term )

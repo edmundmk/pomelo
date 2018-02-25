@@ -14,6 +14,7 @@
 
 options::options()
     :   syntax( false )
+    ,   dump( false )
     ,   graph( false )
     ,   rgoto( false )
     ,   actions( false )
@@ -39,6 +40,10 @@ bool options::parse( int argc, const char* argv[] )
         if ( strcmp( arg, "--syntax" ) == 0 )
         {
             syntax = true;
+        }
+        else if ( strcmp( arg, "--dump" ) == 0 )
+        {
+            dump = true;
         }
         else if ( strcmp( arg, "--graph" ) == 0 )
         {

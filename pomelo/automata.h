@@ -67,14 +67,15 @@ struct automata
     ~automata();
 
     void ensure_distances();
-    void print( bool rgoto );
+    void print_graph( bool rgoto );
+    void print_dump();
 
     syntax_ptr syntax;
     state* start;
     state* accept;
     std::vector< state_ptr > states;
     std::vector< transition_ptr > transitions;
-    std::vector< reducefrom_ptr > reducefrom;
+    std::vector< reducefrom_ptr > reducefroms;
     std::vector< reduction_ptr > reductions;
     std::vector< conflict_ptr > conflicts;
     uintptr_t visited;
