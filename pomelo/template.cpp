@@ -174,7 +174,7 @@ struct $(class_name)::piece
 !(user_value)$(class_name)::$(class_name)()
 !(user_value)    :   _anchor{ -1, nullptr, &_anchor, &_anchor }
 {
-    piece* p = new piece { 0, nullptr };
+    piece* p = new piece { 1, nullptr };
 ?(user_value)    stack* s = new stack { u, START_STATE, p, &_anchor, &_anchor };
 !(user_value)    stack* s = new stack { START_STATE, p, &_anchor, &_anchor };
     _anchor.next = s;
@@ -198,6 +198,8 @@ $(class_name)::~$(class_name)()
         // Loop until this parse fails or we manage to shift the token.
         while ( true )
         {
+            assert( s != &_anchor );
+
             // Look up action.
             int action = ACTION[ s->state * TOKEN_COUNT + token ];
             if ( action < STATE_COUNT )
@@ -235,6 +237,12 @@ $(class_name)::~$(class_name)()
                 {
                     // Create a new stack.
                     z = split_stack( z, s );
+                    printf( "===> SPLIT SHIFT %p %d", z, z->state );
+                    for ( piece* p = z->head; p; p = p->prev )
+                    {
+                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                    }
+                    printf( "\n" );
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ 1 ];
@@ -242,7 +250,14 @@ $(class_name)::~$(class_name)()
 ?(token_type)                    z->head->values.push_back( value( z->state, std::move( tokval ) ) );
 !(token_type)                    z->head->values.push_back( value( z->state, std::nullptr_t() ) );
                     z->state = action;
-                    
+
+                    printf( "===> SPLIT AFTER %p %d", z, z->state );
+                    for ( piece* p = z->head; p; p = p->prev )
+                    {
+                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                    }
+                    printf( "\n" );
+
                     // Ignore this stack until the next token.
                     loop_stack = z;
                 }
@@ -259,14 +274,29 @@ $(class_name)::~$(class_name)()
                     {
                         // Continue using original stack.
                         assert( z->next == s );
+                        assert( s->head->refcount == 1 );
                         z = s;
                     }
+
+                    printf( "===> SPLIT REDUCE %p %d", z, z->state );
+                    for ( piece* p = z->head; p; p = p->prev )
+                    {
+                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                    }
+                    printf( "\n" );
                 
                     // Reduce using the rule.
                     int action = conflict[ i ];
                     assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
                     reduce( z, action - STATE_COUNT );
-                    
+
+                    printf( "===> SPLIT AFTER %p %d", z, z->state );
+                    for ( piece* p = z->head; p; p = p->prev )
+                    {
+                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                    }
+                    printf( "\n" );
+
                     // If this is the first reduction, then we continue around
                     // the while loop until we do something other than a
                     // reduction (see below).  Otherwise this stack will be
@@ -276,14 +306,39 @@ $(class_name)::~$(class_name)()
                
                 // Continue with the while loop using the first stack
                 // resulting from a reduction.
-                s = loop_stack;
+                s = loop_stack->next;
             }
             else if ( action == ERROR_ACTION )
             {
                 // If this is not the only stack, then destroy the stack.
                 if ( s->next != &_anchor || s->prev != &_anchor )
                 {
+                    printf( "--DELETE %p--\n", s );
+                    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
+                    {
+                        printf( "    %d :", s->state );
+                        for ( piece* p = s->head; p; p = p->prev )
+                        {
+                            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                        }
+                        printf( "\n" );
+                    }
+                    printf( "--------\n" );    
+
                     delete_stack( ( s = s->prev )->next );
+
+                    printf( "--AFTER--\n" );
+                    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
+                    {
+                        printf( "    %d :", s->state );
+                        for ( piece* p = s->head; p; p = p->prev )
+                        {
+                            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                        }
+                        printf( "\n" );
+                    }
+                    printf( "--------\n" );    
+
                     break;
                 }
                 
@@ -313,14 +368,28 @@ void $(class_name)::reduce( stack* s, int rule )
 
     // Find length of rule and ensure this stack has at least that many values.
     size_t length = rule_info.length;
-    assert( s->head->refcount == 0 );
+    assert( s->head->refcount == 1 );
     while ( s->head->values.size() < length )
     {
+        printf( "    %d :", s->state );
+        for ( piece* p = s->head; p; p = p->prev )
+        {
+            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+        }
+        printf( "\n" );
+
+
         piece* prev = s->head->prev;
         assert( prev );
         
         if ( prev->refcount == 1 )
         {
+            /*
+                prev->prev <- prev <- s->head <- s
+
+                prev->prev <- s->head <- s
+            */
+
             // Move all values from this piece to the previous one.
             prev->values.reserve( prev->values.size() + s->head->values.size() );
             std::move
@@ -339,7 +408,7 @@ void $(class_name)::reduce( stack* s, int rule )
         }
         else
         {
-            // Copy values into this piece.
+            // Copy values from previous piece into this piece.
             size_t rq_count = length - s->head->values.size();
             size_t cp_count = std::min( prev->values.size(), rq_count );
             size_t index = prev->values.size() - cp_count;
@@ -354,13 +423,18 @@ void $(class_name)::reduce( stack* s, int rule )
             if ( index > 0 )
             {
                 /*
-                          <- s->head
-                    split
-                          <- prev <- ...
+                    prev->prev <- prev <- s->head <- s
+
+                                        <- s->head <- s
+                    prev->prev <- split
+                                        <- prev
                 */
 
+                prev->refcount -= 1;
+                assert( prev->refcount > 0 );
+
                 // Create split piece and link it in.
-                piece* split = new piece{ 2, prev->prev };
+                piece* split = new piece { 2, prev->prev };
                 prev->prev = split;
                 s->head->prev = split;
                 
@@ -375,13 +449,20 @@ void $(class_name)::reduce( stack* s, int rule )
                     split->values.end(),
                     std::back_inserter( prev->values )
                 );
+                split->values.erase
+                (
+                    split->values.begin() + index,
+                    split->values.end()
+                );
             }
             else
             {
                 /*
-                               <- s->head
+                    prev->prev <- prev <- s->head <- s
+
+                               <- s->head <- s
                     prev->prev
-                               <- prev <- ...
+                               <- prev
                 */
                 
                 prev->refcount -= 1;
@@ -391,6 +472,25 @@ void $(class_name)::reduce( stack* s, int rule )
             }
         }
     }
+
+    printf( "    %d :", s->state );
+    for ( piece* p = s->head; p; p = p->prev )
+    {
+        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+    }
+    printf( "\n" );
+
+    printf( "--------\n" );
+    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
+    {
+        printf( "    %d :", s->state );
+        for ( piece* p = s->head; p; p = p->prev )
+        {
+            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+        }
+        printf( "\n" );
+    }
+    printf( "--------\n" );    
     
     // Get pointer to values used to reduce.
     std::vector< value >& values = s->head->values;
@@ -431,7 +531,7 @@ void $(class_name)::reduce( stack* s, int rule )
 $(class_name)::stack* $(class_name)::split_stack( stack* prev, stack* s )
 {
     // Create new piece to be the head of the stack.
-    piece* p = new piece { 0, s->head };
+    piece* p = new piece { 1, s->head };
     p->prev->refcount += 1;
 
     // Create new stack.
@@ -446,14 +546,18 @@ $(class_name)::stack* $(class_name)::split_stack( stack* prev, stack* s )
 void $(class_name)::delete_stack( stack* s )
 {
     // Delete stack pieces.
-    while ( s->head && s->head->refcount == 0 )
+    while ( s->head )
     {
-        piece* prev = s->head->prev;
-        delete s->head;
-        s->head = prev;
-        if ( s->head )
+        s->head->refcount -= 1;
+        if ( s->head->refcount == 0 )
         {
-            s->head->refcount -= 1;
+            piece* prev = s->head->prev;
+            delete s->head;
+            s->head = prev;
+        }
+        else
+        {
+            break;
         }
     }
     
