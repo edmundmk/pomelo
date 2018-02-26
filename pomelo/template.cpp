@@ -229,11 +229,12 @@ $(class_name)::~$(class_name)()
                 
                 // Get list of actions in the conflict.
                 const auto* conflict = CONFLICT + action - STATE_COUNT - RULE_COUNT;
-                int size = conflict[ 0 ];
-                assert( size >= 2 );
+                int conflict_count = conflict[ 0 ];
+                assert( conflict_count >= 2 );
                 
                 // Only the first action may be a shift
-                if ( conflict[ 1 ] < STATE_COUNT )
+                int conflict_index = 1;
+                if ( conflict[ conflict_index ] < STATE_COUNT )
                 {
                     // Create a new stack.
                     z = split_stack( z, s );
@@ -245,7 +246,7 @@ $(class_name)::~$(class_name)()
                     printf( "\n" );
                     
                     // Shift and move to the state encoded in the action.
-                    int action = conflict[ 1 ];
+                    int action = conflict[ conflict_index++ ];
 ?(token_type)                    token_type tokval = v;                    
 ?(token_type)                    z->head->values.push_back( value( z->state, std::move( tokval ) ) );
 !(token_type)                    z->head->values.push_back( value( z->state, std::nullptr_t() ) );
@@ -263,9 +264,9 @@ $(class_name)::~$(class_name)()
                 }
                 
                 // Other actions must be reductions.
-                for ( int i = 1; i < size; ++i )
+                while ( conflict_index < conflict_count )
                 {
-                    if ( i < size - 1 )
+                    if ( conflict_index < conflict_count - 1 )
                     {
                         // Create a new stack.
                         z = split_stack( z, s );
@@ -274,8 +275,14 @@ $(class_name)::~$(class_name)()
                     {
                         // Continue using original stack.
                         assert( z->next == s );
-                        assert( s->head->refcount == 1 );
                         z = s;
+
+                        // Might have to create unique piece for this stack.
+                        assert( z->head->refcount > 0 );
+                        if ( z->head->refcount > 1 )
+                        {
+                            z->head = new piece { 1, z->head };
+                        }
                     }
 
                     printf( "===> SPLIT REDUCE %p %d", z, z->state );
@@ -286,7 +293,7 @@ $(class_name)::~$(class_name)()
                     printf( "\n" );
                 
                     // Reduce using the rule.
-                    int action = conflict[ i ];
+                    int action = conflict[ conflict_index++ ];
                     assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
                     reduce( z, action - STATE_COUNT );
 
@@ -468,7 +475,10 @@ void $(class_name)::reduce( stack* s, int rule )
                 prev->refcount -= 1;
                 assert( prev->refcount > 0 );
                 s->head->prev = prev->prev;
-                prev->prev->refcount += 1;
+                if ( prev->prev )
+                {
+                    prev->prev->refcount += 1;
+                }
             }
         }
     }
