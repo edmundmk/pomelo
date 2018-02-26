@@ -205,10 +205,32 @@ $(class_name)::~$(class_name)()
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
+                printf( "SHIFT %s\n", $(class_name)_symbol_name( token ) );
+
+                printf( "    %d :", s->state );
+                for ( piece* p = s->head; p; p = p->prev )
+                {
+                    printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                }
+                printf( "\n" );
+                
 ?(token_type)                token_type tokval = v;
 ?(token_type)                s->head->values.push_back( value( s->state, std::move( tokval ) ) );
 !(token_type)                s->head->values.push_back( value( s->state, std::nullptr_t() ) );
                 s->state = action;
+
+                printf( "--------\n" );
+                for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
+                {
+                    printf( "    %d :", s->state );
+                    for ( piece* p = s->head; p; p = p->prev )
+                    {
+                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+                    }
+                    printf( "\n" );
+                }
+                printf( "--------\n" );
+
                 break;
             }
             else if ( action < STATE_COUNT + RULE_COUNT )
@@ -371,7 +393,7 @@ $(class_name)::~$(class_name)()
 void $(class_name)::reduce( stack* s, int rule )
 {
     const auto& rule_info = RULE[ rule ];
-    printf( "%s\n", rule_info.name );
+    printf( "REDUCE %s\n", rule_info.name );
 
     // Find length of rule and ensure this stack has at least that many values.
     size_t length = rule_info.length;
@@ -490,18 +512,6 @@ void $(class_name)::reduce( stack* s, int rule )
     }
     printf( "\n" );
 
-    printf( "--------\n" );
-    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
-    {
-        printf( "    %d :", s->state );
-        for ( piece* p = s->head; p; p = p->prev )
-        {
-            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-        }
-        printf( "\n" );
-    }
-    printf( "--------\n" );    
-    
     // Get pointer to values used to reduce.
     std::vector< value >& values = s->head->values;
     assert( values.size() >= length );
@@ -522,6 +532,18 @@ void $(class_name)::reduce( stack* s, int rule )
     int gotos = GOTO[ state * NTERM_COUNT + rule_info.nterm ];
     assert( gotos < STATE_COUNT );
     s->state = gotos;
+
+    printf( "--------\n" );
+    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
+    {
+        printf( "    %d :", s->state );
+        for ( piece* p = s->head; p; p = p->prev )
+        {
+            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+        }
+        printf( "\n" );
+    }
+    printf( "--------\n" );
 }
 
 ?(user_value)?(token_type)void $(class_name)::error( int token, const user_value& u, const token_type& v )
