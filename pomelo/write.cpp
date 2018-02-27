@@ -177,6 +177,13 @@ void write::prepare()
  
         $$(nterm_name)
         $$(nterm_value)
+
+    Per-mergable non-terminal:
+
+        $$(merge_type)
+        $$(merge_name)
+        $$(merge_index)
+        $$(merge_body)
  
     Per-non-terminal-type:
  
@@ -276,6 +283,17 @@ bool write::write_template( FILE* f, char* source, size_t length, bool header )
                         continue;
                     }
                     output += replace( replace( line, token ) );
+                }
+            }
+            else if ( line.compare( per, 9, "$$(merge_" ) == 0 )
+            {
+                for ( nonterminal* nterm : _nterms )
+                {
+                    if ( ! nterm->gspecified )
+                    {
+                        continue;
+                    }
+                    output += replace( replace( line, nterm ) );
                 }
             }
             else if ( line.compare( per, 9, "$$(nterm_" ) == 0 )
@@ -580,9 +598,34 @@ std::string write::replace( std::string line, nonterminal* nterm )
             std::string name = syntax->source->text( nterm->name );
             r.replace( name );
         }
-        else if ( valname == "$$(nterm_value)" )
+        else if ( valname == "$$(nterm_value)" || valname == "$$(merge_index)" )
         {
             r.replace( std::to_string( nterm->value ) );
+        }
+        else if ( valname == "$$(merge_type)" )
+        {
+            r.replace( _nterm_lookup.at( nterm )->ntype );
+        }
+        else if ( valname == "$$(merge_name)" )
+        {
+            std::string name = "merge_";
+            name += syntax->source->text( nterm->name );
+            r.replace( name );
+        }
+        else if ( valname == "$$(merge_body)" )
+        {
+            std::string body;
+/*            if ( nterm->gline >= 0 )
+            {
+                body += "\n#line ";
+                body += std::to_string( nterm->gline );
+                body += " \"";
+                body += _source;
+                body += "\"\n";
+            }
+*/            body += nterm->gmerge;
+            body += "\n";
+            r.replace( body );
         }
         else
         {
@@ -708,7 +751,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
             std::string body;
             if ( rule->actspecified )
             {
-                if ( rule->actline >= 0 )
+/*                if ( rule->actline >= 0 )
                 {
                     body += "\n#line ";
                     body += std::to_string( rule->actline );
@@ -716,7 +759,7 @@ std::string write::replace( std::string line, rule* rule, bool header )
                     body += _source;
                     body += "\"\n";
                 }
-                body += rule->action;
+*/                body += rule->action;
                 body += "\n";
             }
             else
@@ -828,7 +871,9 @@ std::string write::write_rule_table()
         s += std::to_string( rule->nterm->value - token_count );
         s += ", ";
         s += std::to_string( (int)rule->locount - 1 );
-        s += ", \"";
+        s += ", ";
+        s += rule->nterm->gspecified ? "1" : "0";
+        s += " }, // ";
 
         s += source->text( rule->nterm->name );
         s += " :";
@@ -840,7 +885,7 @@ std::string write::write_rule_table()
             s += source->text( loc.sym->name );
         }
         
-        s += "\" },\n";
+        s += "\n";
     }
     
     return s;

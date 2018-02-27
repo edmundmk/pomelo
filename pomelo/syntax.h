@@ -106,6 +106,9 @@ struct nonterminal : public symbol
 
     std::string     type;
     std::vector< rule* > rules;
+    std::string     gmerge;
+    int             gline;
+    bool            gspecified;
     bool            defined;
     bool            erasable;
 };

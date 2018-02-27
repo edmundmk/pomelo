@@ -18,33 +18,31 @@
     Parsing tables.
 */
 
-const int START_STATE      = $(start_state);
+const int $(class_name)::START_STATE      = $(start_state);
+const int $(class_name)::TOKEN_COUNT      = $(token_count);
+const int $(class_name)::NTERM_COUNT      = $(nterm_count);
+const int $(class_name)::STATE_COUNT      = $(state_count);
+const int $(class_name)::RULE_COUNT       = $(rule_count);
+const int $(class_name)::CONFLICT_COUNT   = $(conflict_count);
+const int $(class_name)::ERROR_ACTION     = $(error_action);
+const int $(class_name)::ACCEPT_ACTION    = $(accept_action);
 
-const int ERROR_ACTION     = $(error_action);
-const int ACCEPT_ACTION    = $(accept_action);
-
-const int TOKEN_COUNT      = $(token_count);
-const int NTERM_COUNT      = $(nterm_count);
-const int STATE_COUNT      = $(state_count);
-const int RULE_COUNT       = $(rule_count);
-const int CONFLICT_COUNT   = $(conflict_count);
-
-const unsigned short ACTION[] =
+const unsigned short $(class_name)::ACTION[] =
 {
 $(action_table)
 };
 
-const unsigned short CONFLICT[] =
+const unsigned short $(class_name)::CONFLICT[] =
 {
 $(conflict_table)
 };
 
-const unsigned short GOTO[] =
+const unsigned short $(class_name)::GOTO[] =
 {
 $(goto_table)
 };
 
-const struct { unsigned short nterm; unsigned short length; const char* name; } RULE[] =
+const $(class_name)::rule_info $(class_name)::RULE[] =
 {
 $(rule_table)
 };
@@ -55,7 +53,7 @@ $(rule_table)
     Get names of symbols.
 */
 
-const char* $(class_name)_symbol_name( int kind )
+const char* $(class_name)::symbol_name( int kind )
 {
     switch ( kind )
     {
@@ -150,19 +148,11 @@ private:
 $$(rule_type) $(class_name)::$$(rule_name)($$(rule_param)) { $$(rule_body) }
 
 
-
 /*
-    A piece of the parser stack.  The stack is a tree, with the leaves being
-    the active stack tops.  This is how we implement generalized parsing.
+    Merges.
 */
 
-struct $(class_name)::piece
-{
-    int refcount;
-    piece* prev;
-    std::vector< value > values;
-};
-
+$$(merge_type) $(class_name)::$$(merge_name)( const user_value& u, $$(merge_type)&& a, user_value&& v, $$(merge_type)&& b ) { $$(merge_body) }
 
 
 /*
@@ -201,42 +191,25 @@ $(class_name)::~$(class_name)()
             assert( s != &_anchor );
 
             // Look up action.
-            int action = ACTION[ s->state * TOKEN_COUNT + token ];
+            int action = lookup_action( s->state, token );
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
-                printf( "SHIFT %s\n", $(class_name)_symbol_name( token ) );
-
-                printf( "    %d :", s->state );
-                for ( piece* p = s->head; p; p = p->prev )
-                {
-                    printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                }
-                printf( "\n" );
+                printf( "SHIFT %s\n", symbol_name( token ) );
+                dump_stack( s );
                 
 ?(token_type)                token_type tokval = v;
 ?(token_type)                s->head->values.push_back( value( s->state, std::move( tokval ) ) );
 !(token_type)                s->head->values.push_back( value( s->state, std::nullptr_t() ) );
                 s->state = action;
 
-                printf( "--------\n" );
-                for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
-                {
-                    printf( "    %d :", s->state );
-                    for ( piece* p = s->head; p; p = p->prev )
-                    {
-                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                    }
-                    printf( "\n" );
-                }
-                printf( "--------\n" );
-
+                dump_stacks();
                 break;
             }
             else if ( action < STATE_COUNT + RULE_COUNT )
             {
                 // Reduce using the rule.
-                reduce( s, action - STATE_COUNT );
+                reduce( s, token, action - STATE_COUNT );
 
                 // Continue around while loop until we do something other
                 // than a reduction (a reduction does not consume the token).
@@ -250,7 +223,7 @@ $(class_name)::~$(class_name)()
                 stack* z = s->prev;
                 
                 // Get list of actions in the conflict.
-                const auto* conflict = CONFLICT + action - STATE_COUNT - RULE_COUNT;
+                const unsigned short* conflict = CONFLICT + action - STATE_COUNT - RULE_COUNT;
                 int conflict_count = conflict[ 0 ];
                 assert( conflict_count >= 2 );
                 
@@ -261,11 +234,7 @@ $(class_name)::~$(class_name)()
                     // Create a new stack.
                     z = split_stack( z, s );
                     printf( "===> SPLIT SHIFT %p %d", z, z->state );
-                    for ( piece* p = z->head; p; p = p->prev )
-                    {
-                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                    }
-                    printf( "\n" );
+                    dump_stack( z );
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ conflict_index++ ];
@@ -275,11 +244,7 @@ $(class_name)::~$(class_name)()
                     z->state = action;
 
                     printf( "===> SPLIT AFTER %p %d", z, z->state );
-                    for ( piece* p = z->head; p; p = p->prev )
-                    {
-                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                    }
-                    printf( "\n" );
+                    dump_stack( z );
 
                     // Ignore this stack until the next token.
                     loop_stack = z;
@@ -308,23 +273,15 @@ $(class_name)::~$(class_name)()
                     }
 
                     printf( "===> SPLIT REDUCE %p %d", z, z->state );
-                    for ( piece* p = z->head; p; p = p->prev )
-                    {
-                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                    }
-                    printf( "\n" );
+                    dump_stack( z );
                 
                     // Reduce using the rule.
                     int action = conflict[ conflict_index++ ];
                     assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
-                    reduce( z, action - STATE_COUNT );
+                    reduce( z, token, action - STATE_COUNT );
 
                     printf( "===> SPLIT AFTER %p %d", z, z->state );
-                    for ( piece* p = z->head; p; p = p->prev )
-                    {
-                        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                    }
-                    printf( "\n" );
+                    dump_stack( z );
 
                     // If this is the first reduction, then we continue around
                     // the while loop until we do something other than a
@@ -343,30 +300,12 @@ $(class_name)::~$(class_name)()
                 if ( s->next != &_anchor || s->prev != &_anchor )
                 {
                     printf( "--DELETE %p--\n", s );
-                    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
-                    {
-                        printf( "    %d :", s->state );
-                        for ( piece* p = s->head; p; p = p->prev )
-                        {
-                            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                        }
-                        printf( "\n" );
-                    }
-                    printf( "--------\n" );    
+                    dump_stacks();
 
                     delete_stack( ( s = s->prev )->next );
 
                     printf( "--AFTER--\n" );
-                    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
-                    {
-                        printf( "    %d :", s->state );
-                        for ( piece* p = s->head; p; p = p->prev )
-                        {
-                            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-                        }
-                        printf( "\n" );
-                    }
-                    printf( "--------\n" );    
+                    dump_stacks();
 
                     break;
                 }
@@ -390,23 +329,151 @@ $(class_name)::~$(class_name)()
     }
 }
 
-void $(class_name)::reduce( stack* s, int rule )
+
+int $(class_name)::lookup_action( int state, int token )
 {
-    const auto& rule_info = RULE[ rule ];
-    printf( "REDUCE %s\n", rule_info.name );
+    return ACTION[ state * TOKEN_COUNT + token ];
+}
+
+void $(class_name)::reduce( stack* s, int token, int rule )
+{
+    // Perform reduction.
+    const rule_info& rinfo = RULE[ rule ];
+    reduce_rule( s, rule, rinfo );
+
+    // Unless this reduction could merge stacks, return.
+    if ( ! rinfo.merges || s->head->values.size() != 1 || s->next == &_anchor )
+    {
+        return;
+    }
+
+    // Check other stacks for a reduction to this same nonterminal.  Stacks
+    // earlier in the list will already have been reduced.
+    for ( stack* z = s->next; z != &_anchor; z = z->next )
+    {
+        // Track fake state for this parse stack as we 'reduce' it.
+        int state = z->state;
+        piece* head = z->head;
+        size_t size = z->head->values.size();
+
+        // Simulate reductions until we hit a mergeable state.
+        bool merge = false;
+        while ( true )
+        {
+            int action = lookup_action( state, token );
+            if ( action < STATE_COUNT || action >= STATE_COUNT + RULE_COUNT )
+            {
+                // Not a reduction.  If your grammar is insane enough that a
+                // conflicting reduction can merge then I don't want to know.
+                break;
+            }
+
+            // Simulate reduction.
+            int zrule = action - STATE_COUNT;
+            const rule_info& zrinfo = RULE[ zrule ];
+
+            // Pop symbols off 'stack'.
+            size_t length = zrinfo.length;
+            if ( length > 0 )
+            {
+                while ( length > 0 )
+                {
+                    if ( size == 0 )
+                    {
+                        head = head->prev;
+                        size = z->head->values.size();
+                    }
+                    size_t count = std::min( size, length );
+                    size -= count;
+                    length -= count;
+                }
+
+                // This will be wrong if the grammar contains any rules
+                // which entirely composed of erasable rules.
+                state = head->values.at( size ).state();
+            }
+
+            // Move to state.
+            int goto_state = GOTO[ state * NTERM_COUNT + zrinfo.nterm ];
+            assert( goto_state < STATE_COUNT );
+            state = goto_state;
+
+            // Check if we've reduced to the target symbol, and this is
+            // the only difference with the target stack.
+            if ( state == s->state && zrinfo.nterm == rinfo.nterm
+                    && size == 0 && head->prev == s->head->prev )
+            {
+                // Merges.
+                merge = true;
+                break;
+            }
+
+            // Push nonterminal onto 'stack'.
+            size += 1;
+        }
+
+        // Unless we can merge, check next stack.
+        if ( ! merge )
+        {
+            continue;
+        }
+
+        printf( "====> MERGE\n" );
+        dump_stacks();
+
+        // This stack merges.  Actually perform reductions.
+        while ( true )
+        {
+            // Look up action, which must be a reduction.
+            int action = lookup_action( state, token );
+            assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
+
+            // Perform reduction.
+            int zrule = action - STATE_COUNT;
+            const rule_info& zrinfo = RULE[ zrule ];
+            reduce_rule( z, zrule, zrinfo );
+
+            // Check for arrival at mergable state.
+            if ( state == s->state && zrinfo.nterm == rinfo.nterm
+                    && z->head->values.size() == 1 && z->head->prev == s->head->prev )
+            {
+                break;
+            }
+        }
+
+        // Double check that I'm not crazy.
+        assert( s->head->prev == z->head->prev );
+        assert( s->head->values.size() == 1 );
+        assert( z->head->values.size() == 1 );
+
+        dump_stacks();
+
+        // Perform merge.
+        value& a = s->head->values[ 0 ];
+        value& b = z->head->values[ 0 ];
+        switch ( rinfo.nterm )
+        {
+        case $$(merge_index): a = value( a.state(), $$(merge_name)( s->u, a.move< $$(merge_type) >(), std::move( z->u ), b.move< $$(merge_type) >() ) ); break;
+        }
+
+        // Delete stack.
+        z->head->values.erase( z->head->values.begin() );
+        delete_stack( z );
+
+        dump_stacks();
+    }
+}
+
+void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
+{
+    printf( "REDUCE %s\n", symbol_name( rinfo.nterm ) );
 
     // Find length of rule and ensure this stack has at least that many values.
-    size_t length = rule_info.length;
+    size_t length = rinfo.length;
     assert( s->head->refcount == 1 );
     while ( s->head->values.size() < length )
     {
-        printf( "    %d :", s->state );
-        for ( piece* p = s->head; p; p = p->prev )
-        {
-            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-        }
-        printf( "\n" );
-
+        dump_stack( s );
 
         piece* prev = s->head->prev;
         assert( prev );
@@ -505,12 +572,7 @@ void $(class_name)::reduce( stack* s, int rule )
         }
     }
 
-    printf( "    %d :", s->state );
-    for ( piece* p = s->head; p; p = p->prev )
-    {
-        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-    }
-    printf( "\n" );
+    dump_stack( s );
 
     // Get pointer to values used to reduce.
     std::vector< value >& values = s->head->values;
@@ -529,21 +591,11 @@ void $(class_name)::reduce( stack* s, int rule )
     
     // Find state we've returned to after reduction, and goto next one.
     int state = values[ index ].state();
-    int gotos = GOTO[ state * NTERM_COUNT + rule_info.nterm ];
-    assert( gotos < STATE_COUNT );
-    s->state = gotos;
+    int goto_state = GOTO[ state * NTERM_COUNT + rinfo.nterm ];
+    assert( goto_state < STATE_COUNT );
+    s->state = goto_state;
 
-    printf( "--------\n" );
-    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
-    {
-        printf( "    %d :", s->state );
-        for ( piece* p = s->head; p; p = p->prev )
-        {
-            printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
-        }
-        printf( "\n" );
-    }
-    printf( "--------\n" );
+    dump_stacks();
 }
 
 ?(user_value)?(token_type)void $(class_name)::error( int token, const user_value& u, const token_type& v )
@@ -598,4 +650,31 @@ void $(class_name)::delete_stack( stack* s )
     s->next->prev = s->prev;
     delete s;
 }
+
+
+/*
+    Debugging.
+*/
+
+void $(class_name)::dump_stacks()
+{
+    printf( "--------\n" );
+    for ( stack* s = _anchor.next; s != &_anchor; s = s->next )
+    {
+        dump_stack( s );
+    }
+    printf( "--------\n" );
+}
+
+void $(class_name)::dump_stack( stack* s )
+{
+    printf( "    %p->%d :", s, s->state );
+    for ( piece* p = s->head; p; p = p->prev )
+    {
+        printf( " -> %p/%d/%zu", p, p->refcount, p->values.size() );
+    }
+    printf( "\n" );
+}
+
+
 

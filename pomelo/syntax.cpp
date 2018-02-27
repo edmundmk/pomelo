@@ -60,12 +60,18 @@ void syntax::print()
 
         printf
         (
-            "%s : %d {%s}\n[\n",
+            "%s : %d {%s}\n",
             source->text( nsym->name ),
             nsym->value,
             nsym->type.c_str()
         );
+
+        if ( nsym->gspecified )
+        {
+            printf( "    @{%s}\n", nsym->gmerge.c_str() );
+        }
         
+        printf( "[\n" );
         for ( rule* rule : nsym->rules )
         {
             printf( "    " );
@@ -132,6 +138,7 @@ terminal::terminal( token name )
 
 nonterminal::nonterminal( token name )
     :   symbol( name, false )
+    ,   gspecified( false )
     ,   defined( false )
     ,   erasable( false )
 {

@@ -24,12 +24,11 @@ enum
 };
 
 
-const char* $(class_name)_symbol_name( int kind );
-
-
 class $(class_name)
 {
 public:
+
+    static const char* symbol_name( int kind );
 
 ?(user_value)    typedef $(user_value) user_value;
 ?(token_type)    typedef $(token_type) token_type;
@@ -45,7 +44,20 @@ public:
 private:
 
     class value;
-    struct piece;
+
+    struct rule_info
+    {
+        unsigned short nterm;
+        unsigned short length   : 15;
+        unsigned short merges   : 1;
+    };
+
+    struct piece
+    {
+        int refcount;
+        piece* prev;
+        std::vector< value > values;
+    };
     
     struct stack
     {
@@ -55,10 +67,27 @@ private:
         stack* prev;
         stack* next;
     };
-    
+
+    static const int START_STATE;
+    static const int TOKEN_COUNT;
+    static const int NTERM_COUNT;
+    static const int STATE_COUNT;
+    static const int RULE_COUNT;
+    static const int CONFLICT_COUNT;
+    static const int ERROR_ACTION;
+    static const int ACCEPT_ACTION;
+
+    static const unsigned short ACTION[];
+    static const unsigned short CONFLICT[];
+    static const unsigned short GOTO[];
+    static const rule_info RULE[];
+
     $$(rule_type) $$(rule_name)($$(rule_param));
+    $$(merge_type) $$(merge_name)( const user_value& u, $$(merge_type)&& a, user_value&& v, $$(merge_type)&& b );
     
-    void reduce( stack* s, int rule );
+    int lookup_action( int state, int token );
+    void reduce( stack* s, int token, int rule );
+    void reduce_rule( stack* s, int rule, const rule_info& rinfo );
 ?(user_value)?(token_type)    void error( int token, const user_value& u, const token_type& v );
 ?(user_value)!(token_type)    void error( int token, const user_value& u );
 !(user_value)?(token_type)    void error( int token, const token_type& v );
@@ -67,6 +96,9 @@ private:
     stack* split_stack( stack* prev, stack* s );
     void delete_stack( stack* s );
     
+    void dump_stack( stack* s );
+    void dump_stacks();
+
     stack _anchor;
 
 };

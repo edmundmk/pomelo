@@ -283,6 +283,22 @@ void parser::parse_nonterminal()
         nonterminal->type = _block;
         next();
     }
+
+    if ( _lexed == '@' )
+    {
+        next();
+        if ( _lexed != BLOCK )
+        {
+            expected( "merge code" );
+            return;
+        }
+
+        file_line line = _syntax->source->source_location( _tloc );
+        nonterminal->gline = line.line;        
+        nonterminal->gmerge = _block;
+        nonterminal->gspecified = true;
+        next();
+    }
     
     if ( _lexed != '[' )
     {
