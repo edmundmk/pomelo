@@ -598,9 +598,14 @@ std::string write::replace( std::string line, nonterminal* nterm )
             std::string name = syntax->source->text( nterm->name );
             r.replace( name );
         }
-        else if ( valname == "$$(nterm_value)" || valname == "$$(merge_index)" )
+        else if ( valname == "$$(nterm_value)" )
         {
             r.replace( std::to_string( nterm->value ) );
+        }
+        else if ( valname == "$$(merge_index)" )
+        {
+            int index = nterm->value - _action_table->token_count;
+            r.replace( std::to_string( index ) );
         }
         else if ( valname == "$$(merge_type)" )
         {

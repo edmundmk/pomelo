@@ -425,7 +425,7 @@ void $(class_name)::reduce( stack* s, int token, int rule )
         while ( true )
         {
             // Look up action, which must be a reduction.
-            int action = lookup_action( state, token );
+            int action = lookup_action( z->state, token );
             assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
 
             // Perform reduction.
@@ -466,7 +466,7 @@ void $(class_name)::reduce( stack* s, int token, int rule )
 
 void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
 {
-    printf( "REDUCE %s\n", symbol_name( rinfo.nterm ) );
+    printf( "REDUCE %s\n", symbol_name( TOKEN_COUNT + rinfo.nterm ) );
 
     // Find length of rule and ensure this stack has at least that many values.
     size_t length = rinfo.length;
