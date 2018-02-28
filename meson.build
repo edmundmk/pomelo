@@ -6,7 +6,14 @@
 #
 
 
-project( 'pomelo', 'cpp', default_options: [ 'cpp_std=gnu++17' ] )
+project( 'pomelo', 'cpp' )
+
+compiler = meson.get_compiler( 'cpp' )
+if compiler.get_id() != 'msvc' and not compiler.has_argument( '-std=gnu++17' )
+    options = [ 'cpp_std=gnu++1z' ]
+else
+    options = [ 'cpp_std=gnu++17' ]
+endif
 
 sources = [
     'pomelo/actions.cpp',
@@ -29,5 +36,5 @@ sources += custom_target(
     command : [ find_program( 'geninc.sh' ), '@INPUT0@', '@INPUT1@', '@OUTPUT@' ]
 )
 
-executable( 'pomelo', sources : sources, install : true )
+executable( 'pomelo', sources : sources, install : true, override_options : options )
 
