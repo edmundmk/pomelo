@@ -23,32 +23,32 @@ Options:
 
   * `--syntax` : Writes a syntax file to stdout after parsing, generated
     from the internal syntax representation.  Used to test the syntax parser 
-    rontend.
+    frontend.
+
   * `--dump` : Writes a detailed list of all states and transitions in the
     generated LALR(1) automata to stdout.  Useful for debugging complex
     grammars and understanding conflicts.
+
   * `--graph` : Writes a digraph description of the LALR(1) automata in `dot`
     format, which can be used to generate a visual representation of the
     automata.  More useful if a problem can be localised to small example
     grammar, as otherwise the graph is likely to be extremely large.
+
   * `--rgoto` : Adds additional arrows to the `--graph` which link the final
     transition in a production to the transitions that shift the reduced
     production onto the parser stack.  This corresponds to the `includes`
     relation in LALR(1) construction, and can be useful for debugging the
     parser generator.
+
   * `--actions` : Dump a low-level representation of the main parser table
     to stdout.
+
   * `--conflicts` : Print warnings about expected conflicts, and conflicts
     resolved by token precedence to stderr.  Normally, pomelo only reports
     unexpected and unresolved conflicts.
 
 
 ## Syntax files
-
-### Directives
-
-
-
 
 ### Productions
 
@@ -58,11 +58,12 @@ consists of its name, followed by a list of rules enclosed in square brackets.
     nonterminal_name
     [
         A B C .
+        D E F .
     ]
 
 Nonterminal (production) names are lower-case.  Terminal (token) names are
 upper-case.  All rules for a particular production must be specified at the 
-ame time.
+same time.
 
 The first nonterminal in a syntax file is the root production.
 
@@ -92,8 +93,14 @@ the action function by giving them a name using parentheses.
         PP contents(c) DOT(op) qual_name(name) QQ .
             { return build_node( c, op, name); }
 
-Action code must return a value for the resulting nonterminal value.  The type
-of a nonterminal is specified in curly braces after the nonterminal name.
+Symbol values are passed by rvalue reference into the action function, as they
+are consumed by the action to create the resulting nonterminal value.
+
+There is an additional parameter, `u`, which is a reference to the user value
+for the parse stack.
+
+Action functions must return a value for the resulting nonterminal value.  The
+type of a nonterminal is specified in curly braces after the nonterminal name.
 
     pp_qq_opt { node_ptr }
     [
@@ -102,6 +109,12 @@ of a nonterminal is specified in curly braces after the nonterminal name.
         PP contents(c) DOT(op) qual_name(name) QQ .
             { return build_node( c, op, name); }
     ]
+
+Nonterminal values are placed on the parse stack.  They are usually moved -
+from the result of an action function into the parse stack, and then out of
+the parse stack into the action function that consumes them.  However, when
+parse stacks are split they may be copied, as each potential parse gets its
+own copy of each value.
 
 
 ### Precedence
@@ -126,8 +139,8 @@ Precendence and associativity is assigned to terminal symbols using the
 
 Tokens appearing in earlier directives have lower precedence (i.e. when used
 as operators they bind less tightly).  Tokens appearing in later directives
-have higher precedence.  Tokens which appear in the same directive have the
-same precedence.
+have higher precedence (i.e. they bind more tightly).  Tokens which appear in
+the same directive have the same precedence.
 
 These directives also provide a way to declare terminal symbols which do not
 appear in any grammar rule.
@@ -181,15 +194,16 @@ should be accepted by the parser generator - they will trigger a split in the
 parser stack at runtime.
 
 Therefore, a grammar author must mark expected unresolved conflicts using
-the conflict marker `!` where they appear in the grammar.
+the conflict marker `!` where they appear in the grammar.  This reduces the
+chance that an unanticipated conflict will slip through.
 
 To mark a shift as conflicting, place a conflict marker before the token that
-will be shifted where it appears in the rule.
+will be shifted where it appears in a rule.
 
 To mark a rule as conflicting, place a conflict marker at the end of the rule,
 before the period.
 
-    conflicts_example
+    conflict_marker_example
     [
         context ! SHIFT_TOKEN TRAILING .
         reduce_rule TOKEN symbol ! .
@@ -205,10 +219,133 @@ For reduce/reduce conflicts, the conflict is expected if both rules are marked
 with the conflict marker.
 
 
-## Generated parsers
+### Generalized parsing
+
+The grammars for many real programming languages are ambiguous, requiring
+contextual knowledge to disambiguate two or more valid parse trees.  GLR
+parsing allows us to handle both unambiguous grammars that are not LALR(1) and
+grammars that are actually ambiguous.
+
+When the parser encounters an expected conflict, the parser is split into
+two (or more) independent parsers.  Instead of a single parser stack, there
+are now multiple parser stacks, each with their own stack top, user value, and
+state.
+
+The user value for the split stack is generates by a call to the `%user_split`
+function.
+
+    %user_split
+    {
+        return split_parse( u );
+    }
 
 
-## Generalized parsing
+This function takes with one parameter `u`, which is a reference to the user
+value from the original stack.  `u` will be used as the user value for the
+first stack.  The function returns a user value for the second stack.
+
+The part of the parser stack that is common is shared.
+
+                                  <- type_name LT NAME (u, state 52)
+        func_header LBR stmt_list
+                                  <- decl_name LT NAME (v, state 98)
+
+In pomelo, the parse stack is a tree structure, not a graph - only the left
+context is shared.  This is sufficient for languages where ambiguities are
+fairly localised, and alternatives either die off or merge quickly.
+
+If the parser encounters an error, and there is more than one valid parse
+remaining, the parse that errored is destroyed, and parsing continues.
+
+Ambiguous grammars can merge alternatives using a merge function.  This is a
+block of code attached to a nonterminal production with the `@` symbol.  If
+two parses reduce to this nonterminal at the same time with identical left
+contexts, then the parses are merged.
+
+    ambiguous_expr_decl { node_ptr }
+        @{ return merge_parses( u, a, v, b ); }
+    [
+        expr(e) . { return e; }
+        decl(d) . { return d; }
+    ]
+
+The parameters passed to a merge function are:
+
+  * `u` : A reference to the user value from the first parse.  This becomes the
+    user value of the merged parse stack.
+
+  * `a` : An rvalue reference to the nonterminal value from the first parse.
+    The function consumes this value during the merge.
+
+  * `v` : An rvalue reference to the user value from the second parse.   The
+    function consumes this value during the merge, and the second parse stack
+    is destroyed by the merge operation.
+
+  * `b` : An rvalue reference to the nonterminal value from the second parse.
+    The function consumes this value during the merge.
+
+It should return a single value which is used as the value of the nonterminal
+in the merged parse stack.  This could be either of the alternatives, or a
+combination of both.
+
+
+### Error Reporting
+
+The error function is defined using the `%error_report` directive.
+
+    %error_report
+    {
+        fprintf( stderr, "unexpected token '%s'\n", symbol_name( token ) );
+    }
+    
+When there is only one valid parse, and the parser is given a unexpected token,
+then the error function is called with the following arguments:
+
+  * `token` : The integer value (from the enumeration) of the unexpected token.
+
+  * `u` : A reference to the user value for the current parse.
+
+  * `v` : A reference to the token's value.
+
+Currently the parser does not attempt error recovery - the parser remains in
+the same state after reporting an unexpected token.
+
+
+### Directives
+
+Directives supported in syntax files:
+
+  * `%include { /* C++ */ }` : Places a block of C++ code at the top of the
+    generated header file.  Allows inclusion of headers or declarations of
+    types for user values.
+
+  * `%user_value { type_name }` : Specify the type of the user value
+    associated with each parse.
+
+  * `%user_split { /* C++ */ }` : Declares the split function for user values,
+    see above.
+
+  * `%class_name { identifier }` : Give a name for the generated parser class.
+    The default is `parser`.
+    
+  * `%token_type { type_name }` : The value type for terminal symbols.  Like
+    value types for nonterminals, terminal values are usually moved, but they
+    are copied into the parser for each live parse, and may be copied when
+    stacks are split.
+
+  * `%token_prefix { PREFIX_ }` : An enumeration listing all terminal symbols
+    (and giving them an integer value) is written into the generated header.
+    This allows you to provide a prefix for the enumerators.
+
+  * `%nterm_prefix { PREFIX_ }` : An enumeration listing all nonterminal
+    symbols is written into the generated header.  This allows you to provide
+    a prefix for the enumerators.  Note that nonterminal names are converted
+    to upper case in this context.
+
+  * `%error_report { /* C++ */ }` : Declares the error function, see above.
+
+  * `%left`, `%right`, `%nonassoc` : Assigns precedence to terminal symbols,
+    see above.
 
 
 ## TODO
