@@ -198,15 +198,19 @@ $(class_name)::~$(class_name)()
             if ( action < STATE_COUNT )
             {
                 // Shift and move to the state encoded in the action.
+#ifdef POMELO_TRACE
                 printf( "SHIFT %s\n", symbol_name( token ) );
                 dump_stack( s );
+#endif
                 
 ?(token_type)                token_type tokval = v;
 ?(token_type)                s->head->values.push_back( value( s->state, std::move( tokval ) ) );
 !(token_type)                s->head->values.push_back( value( s->state, std::nullptr_t() ) );
                 s->state = action;
 
+#ifdef POMELO_TRACE
                 dump_stacks();
+#endif
                 break;
             }
             else if ( action < STATE_COUNT + RULE_COUNT )
@@ -236,8 +240,11 @@ $(class_name)::~$(class_name)()
                 {
                     // Create a new stack.
                     z = split_stack( z, s );
+
+#ifdef POMELO_TRACE
                     printf( "===> SPLIT SHIFT %p %d", z, z->state );
                     dump_stack( z );
+#endif
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ conflict_index++ ];
@@ -246,8 +253,10 @@ $(class_name)::~$(class_name)()
 !(token_type)                    z->head->values.push_back( value( z->state, std::nullptr_t() ) );
                     z->state = action;
 
+#ifdef POMELO_TRACE
                     printf( "===> SPLIT AFTER %p %d", z, z->state );
                     dump_stack( z );
+#endif
 
                     // Ignore this stack until the next token.
                     loop_stack = z;
@@ -275,16 +284,20 @@ $(class_name)::~$(class_name)()
                         }
                     }
 
+#ifdef POMELO_TRACE
                     printf( "===> SPLIT REDUCE %p %d", z, z->state );
                     dump_stack( z );
+#endif
                 
                     // Reduce using the rule.
                     int action = conflict[ conflict_index++ ];
                     assert( action >= STATE_COUNT && action < STATE_COUNT + RULE_COUNT );
                     reduce( z, token, action - STATE_COUNT );
 
+#ifdef POMELO_TRACE
                     printf( "===> SPLIT AFTER %p %d", z, z->state );
                     dump_stack( z );
+#endif
 
                     // If this is the first reduction, then we continue around
                     // the while loop until we do something other than a
@@ -302,13 +315,17 @@ $(class_name)::~$(class_name)()
                 // If this is not the only stack, then destroy the stack.
                 if ( s->next != &_anchor || s->prev != &_anchor )
                 {
+#ifdef POMELO_TRACE
                     printf( "--DELETE %p--\n", s );
                     dump_stacks();
+#endif
 
                     delete_stack( ( s = s->prev )->next );
 
+#ifdef POMELO_TRACE
                     printf( "--AFTER--\n" );
                     dump_stacks();
+#endif
 
                     break;
                 }
@@ -421,8 +438,10 @@ void $(class_name)::reduce( stack* s, int token, int rule )
             continue;
         }
 
+#ifdef POMELO_TRACE
         printf( "====> MERGE\n" );
         dump_stacks();
+#endif
 
         // This stack merges.  Actually perform reductions.
         while ( true )
@@ -449,7 +468,9 @@ void $(class_name)::reduce( stack* s, int token, int rule )
         assert( s->head->values.size() == 1 );
         assert( z->head->values.size() == 1 );
 
+#ifdef POMELO_TRACE
         dump_stacks();
+#endif
 
         // Perform merge.
         value& a = s->head->values[ 0 ];
@@ -463,20 +484,26 @@ void $(class_name)::reduce( stack* s, int token, int rule )
         z->head->values.erase( z->head->values.begin() );
         delete_stack( z );
 
+#ifdef POMELO_TRACE
         dump_stacks();
+#endif
     }
 }
 
 void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
 {
+#ifdef POMELO_TRACE
     printf( "REDUCE %s\n", symbol_name( TOKEN_COUNT + rinfo.nterm ) );
+#endif
 
     // Find length of rule and ensure this stack has at least that many values.
     size_t length = rinfo.length;
     assert( s->head->refcount == 1 );
     while ( s->head->values.size() < length )
     {
+#ifdef POMELO_TRACE
         dump_stack( s );
+#endif
 
         piece* prev = s->head->prev;
         assert( prev );
@@ -575,7 +602,9 @@ void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
         }
     }
 
+#ifdef POMELO_TRACE
     dump_stack( s );
+#endif
 
     // Get pointer to values used to reduce.
     std::vector< value >& values = s->head->values;
@@ -598,7 +627,9 @@ void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
     assert( goto_state < STATE_COUNT );
     s->state = goto_state;
 
+#ifdef POMELO_TRACE
     dump_stacks();
+#endif
 }
 
 ?(user_value)?(token_type)void $(class_name)::error( int token, const user_value& u, const token_type& v )
@@ -659,6 +690,8 @@ void $(class_name)::delete_stack( stack* s )
     Debugging.
 */
 
+#ifdef POMELO_TRACE
+
 void $(class_name)::dump_stacks()
 {
     printf( "--------\n" );
@@ -678,6 +711,8 @@ void $(class_name)::dump_stack( stack* s )
     }
     printf( "\n" );
 }
+
+#endif
 
 
 

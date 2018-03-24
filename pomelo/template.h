@@ -99,8 +99,10 @@ private:
     stack* split_stack( stack* prev, stack* s );
     void delete_stack( stack* s );
     
+#ifdef POMELO_TRACE
     void dump_stack( stack* s );
     void dump_stacks();
+#endif
 
     stack _anchor;
 
