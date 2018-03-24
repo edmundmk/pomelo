@@ -3,7 +3,10 @@
 //  pomelo
 //
 //  Created by Edmund Kapusniak on 11/12/2017.
-//  Copyright © 2017 Edmund Kapusniak. All rights reserved.
+//  Copyright © 2017 Edmund Kapusniak.
+//
+//  Licensed under the MIT License. See LICENSE file in the project root for
+//  full license information. 
 //
 
 
