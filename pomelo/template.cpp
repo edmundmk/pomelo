@@ -638,11 +638,6 @@ void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
     $(error_report)
 }
 
-?(user_value)$(class_name)::user_value $(class_name)::user_split( const user_value& u )
-?(user_value){
-?(user_value)    $(user_split)
-?(user_value)}
-
 
 $(class_name)::stack* $(class_name)::split_stack( stack* prev, stack* s )
 {
@@ -658,6 +653,11 @@ $(class_name)::stack* $(class_name)::split_stack( stack* prev, stack* s )
 
     return split;
 }
+
+?(user_value)$(class_name)::user_value $(class_name)::user_split( const user_value& u )
+?(user_value){
+?(user_value)    $(user_split)
+?(user_value)}
 
 void $(class_name)::delete_stack( stack* s )
 {
