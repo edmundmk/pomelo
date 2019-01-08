@@ -346,7 +346,7 @@ $(class_name)::~$(class_name)()
                 // Otherwise report the error.
 ?(user_value)?(token_type)                error( s->u, token, tokval );
 ?(user_value)!(token_type)                error( s->u, token );
-!(user_value)?(token_type)                error( token, v );
+!(user_value)?(token_type)                error( token, tokval );
 !(user_value)!(token_type)                error( token );
                 
                 // TODO: error recovery.
