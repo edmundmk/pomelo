@@ -53,8 +53,9 @@ Options:
 pomelo generates a parser class, including all actions from the syntax file.
 
 To use the parser, construct an instance, passing in the user value for the
-main parse stack.  The user value is typically a reference to the rest of the
-code using the parser, providing methods used by the actions.
+main parse stack.  The user value is typically a reference to the object built
+or modified by the parser, or an object that provides methods called by the
+actions.
 
     explicit parser( const user_value& u );
 
