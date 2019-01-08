@@ -314,9 +314,13 @@ the same state after reporting an unexpected token.
 
 Directives supported in syntax files:
 
-  * `%include { /* C++ */ }` : Places a block of C++ code at the top of the
-    generated header file.  Allows inclusion of headers or declarations of
-    types for user values.
+  * `%include { /* C++ */ }` or `%include_header { /* C++ */ }` : Places a
+    block of C++ code at the top of the generated header file.  Allows
+    inclusion of headers or declarations of types for user values.
+
+  * `%include_source { /* C++ */ }` : Places a block of C++ code at the top of
+    the generated source file.  Useful for including definitions of token or
+    user value types, or other declarations needed by parser actions.
 
   * `%user_value { type_name }` : Specify the type of the user value
     associated with each parse.

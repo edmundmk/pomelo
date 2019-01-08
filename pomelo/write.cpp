@@ -427,9 +427,13 @@ std::string write::replace( std::string line )
         {
             r.replace( _output_h );
         }
-        else if ( valname == "$(include)" )
+        else if ( valname == "$(include_header)" )
         {
-            r.replace( trim( syntax->include.text ) );
+            r.replace( trim( syntax->include_header.text ) );
+        }
+        else if ( valname == "$(include_source)" )
+        {
+            r.replace( trim( syntax->include_source.text ) );
         }
         else if ( valname == "$(include_guard)" )
         {

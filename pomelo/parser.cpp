@@ -164,9 +164,13 @@ void parser::parse_directive()
     
     const char* text = _syntax->source->text( _token );
     directive* directive = nullptr;
-    if ( strcmp( text, "include" ) == 0 )
+    if ( strcmp( text, "include" ) == 0 || strcmp( text, "include_header" ) == 0 )
     {
-        directive = &_syntax->include;
+        directive = &_syntax->include_header;
+    }
+    else if ( strcmp( text, "include_source" ) == 0 )
+    {
+        directive = &_syntax->include_source;
     }
     else if ( strcmp( text, "user_value" ) == 0 )
     {

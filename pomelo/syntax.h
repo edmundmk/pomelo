@@ -70,7 +70,8 @@ struct syntax
     void print();
 
     source_ptr source;
-    directive include;
+    directive include_header;
+    directive include_source;
     directive user_value;
     directive user_split;
     directive class_name;

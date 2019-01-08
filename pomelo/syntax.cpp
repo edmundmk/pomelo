@@ -35,7 +35,8 @@ syntax::~syntax()
 void syntax::print()
 {
     
-    printf( "%%include {%s}\n", include.text.c_str() );
+    printf( "%%include_header {%s}\n", include_header.text.c_str() );
+    printf( "%%include_source {%s}\n", include_source.text.c_str() );
     printf( "%%user_value {%s}\n", user_value.text.c_str() );
     printf( "%%class_name {%s}\n", class_name.text.c_str() );
     printf( "%%token_type {%s}\n", token_type.text.c_str() );
