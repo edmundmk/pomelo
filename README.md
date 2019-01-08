@@ -182,16 +182,15 @@ resolved.
 
 ### Expected Conflicts
 
-Many real grammars are not LALR(1) and will contain unresolved conflicts.  This
-is why pomelo implements generalized parsing.  By default, pomelo reports an
-error (and returns a failure code) when it encounters unresolved conflicts in a
-grammar.
+Many real grammars are not LALR(1) and will contain parse conflicts.  By
+default, pomelo reports an error (and returns a failure code) when it
+encounters unresolved conflicts in a grammar.
 
 When writing a grammar, especially for an LR parser, conflicts are not always
 obvious.  It is easy to edit a grammar and introduce ambiguity where none was
 intended.  However, some ambiguities are real features of the language and
 should be accepted by the parser generator - they will trigger a split in the
-parser stack at runtime.
+parser stack at runtime and parsing will continue using a GLR algorithm.
 
 Therefore, a grammar author must mark expected unresolved conflicts using
 the conflict marker `!` where they appear in the grammar.  This reduces the
@@ -221,10 +220,11 @@ with the conflict marker.
 
 ### Generalized parsing
 
-The grammars for many real programming languages are ambiguous, requiring
-contextual knowledge to disambiguate two or more valid parse trees.  GLR
-parsing allows us to handle both unambiguous grammars that are not LALR(1) and
-grammars that are actually ambiguous.
+A grammar with unresolved conflicts is effectively ambiguous.  Such grammars
+either require more than one token of lookahead, or additional contextual
+knowledge must be used to disambiguate two or more valid parse trees.  GLR
+parsing allows us to handle both these cases - unambiguous grammars that are
+not LALR(1), or truly ambiguous grammars.
 
 When the parser encounters an expected conflict, the parser is split into
 two (or more) independent parsers.  Instead of a single parser stack, there
