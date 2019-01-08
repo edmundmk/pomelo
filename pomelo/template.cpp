@@ -182,7 +182,7 @@ $(class_name)::~$(class_name)()
     }
 }
 
-?(token_type)void $(class_name)::parse( int token, const token_type& v )
+?(token_type)void $(class_name)::parse( int token, const token_type& tokval )
 !(token_type)void $(class_name)::parse( int token )
 {
     // Evaluate for each active parse stack.
@@ -203,8 +203,7 @@ $(class_name)::~$(class_name)()
                 dump_stack( s );
 #endif
                 
-?(token_type)                token_type tokval = v;
-?(token_type)                s->head->values.push_back( value( s->state, std::move( tokval ) ) );
+?(token_type)                s->head->values.push_back( value( s->state, token_type( tokval ) ) );
 !(token_type)                s->head->values.push_back( value( s->state, std::nullptr_t() ) );
                 s->state = action;
 
@@ -248,8 +247,7 @@ $(class_name)::~$(class_name)()
                     
                     // Shift and move to the state encoded in the action.
                     int action = conflict[ conflict_index++ ];
-?(token_type)                    token_type tokval = v;                    
-?(token_type)                    z->head->values.push_back( value( z->state, std::move( tokval ) ) );
+?(token_type)                    z->head->values.push_back( value( z->state, token_type( tokval ) ) );
 !(token_type)                    z->head->values.push_back( value( z->state, std::nullptr_t() ) );
                     z->state = action;
 
@@ -331,8 +329,8 @@ $(class_name)::~$(class_name)()
                 }
                 
                 // Otherwise report the error.
-?(user_value)?(token_type)                error( token, s->u, v );
-?(user_value)!(token_type)                error( token, s->u );
+?(user_value)?(token_type)                error( s->u, token, tokval );
+?(user_value)!(token_type)                error( s->u, token );
 !(user_value)?(token_type)                error( token, v );
 !(user_value)!(token_type)                error( token );
                 
@@ -473,8 +471,8 @@ void $(class_name)::reduce( stack* s, int token, int rule )
 #endif
 
         // Perform merge.
-        value& a = s->head->values[ 0 ];
-        value& b = z->head->values[ 0 ];
+        value& a = s->head->values[ 0 ]; (void)a;
+        value& b = z->head->values[ 0 ]; (void)b;
         switch ( rinfo.nterm )
         {
         case $$(merge_index): a = value( a.state(), $$(merge_name)( s->u, a.move< $$(merge_type) >(), std::move( z->u ), b.move< $$(merge_type) >() ) ); break;
@@ -632,9 +630,9 @@ void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
 #endif
 }
 
-?(user_value)?(token_type)void $(class_name)::error( int token, const user_value& u, const token_type& v )
-?(user_value)!(token_type)void $(class_name)::error( int token, const user_value& u )
-!(user_value)?(token_type)void $(class_name)::error( int token, const token_type& v )
+?(user_value)?(token_type)void $(class_name)::error( const user_value& u, int token, const token_type& tokval )
+?(user_value)!(token_type)void $(class_name)::error( const user_value& u, int token )
+!(user_value)?(token_type)void $(class_name)::error( int token, const token_type& tokval )
 !(user_value)!(token_type)void $(class_name)::error( int token )
 {
     $(error_report)

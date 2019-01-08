@@ -40,7 +40,7 @@ public:
 !(user_value)    $(class_name)();
     ~$(class_name)();
     
-?(token_type)    void parse( int token, const token_type& v );
+?(token_type)    void parse( int token, const token_type& tokval );
 !(token_type)    void parse( int token );
 
 
@@ -91,9 +91,9 @@ private:
     int lookup_action( int state, int token );
     void reduce( stack* s, int token, int rule );
     void reduce_rule( stack* s, int rule, const rule_info& rinfo );
-?(user_value)?(token_type)    void error( int token, const user_value& u, const token_type& v );
-?(user_value)!(token_type)    void error( int token, const user_value& u );
-!(user_value)?(token_type)    void error( int token, const token_type& v );
+?(user_value)?(token_type)    void error( const user_value& u, int token, const token_type& tokval );
+?(user_value)!(token_type)    void error( const user_value& u, int token );
+!(user_value)?(token_type)    void error( int token, const token_type& tokval );
 !(user_value)!(token_type)    void error( int token );
 ?(user_value)    user_value user_split( const user_value& u );
     stack* split_stack( stack* prev, stack* s );

@@ -300,11 +300,11 @@ The error function is defined using the `%error_report` directive.
 When there is only one valid parse, and the parser is given a unexpected token,
 then the error function is called with the following arguments:
 
-  * `token` : The integer value (from the enumeration) of the unexpected token.
-
   * `u` : A reference to the user value for the current parse.
 
-  * `v` : A reference to the token's value.
+  * `token` : The integer value (from the enumeration) of the unexpected token.
+
+  * `tokval` : A reference to the token's value.
 
 Currently the parser does not attempt error recovery - the parser remains in
 the same state after reporting an unexpected token.
