@@ -48,7 +48,7 @@ file_line source::source_location( srcloc sloc )
     l--;
     
     int line = (int)( l - _lines.begin() ) + 1;
-    int column = (int)( sloc - *l );
+    int column = (int)( sloc - *l ) + 1;
     
     return { _path.c_str(), line, column };
 }
