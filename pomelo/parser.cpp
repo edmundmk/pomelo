@@ -71,28 +71,28 @@ void parser::parse( const char* path )
     if ( _syntax->start )
     {
         // Start symbol is special.
-        token start_token = _syntax->source->new_token( 0, "@start" );
+        token start_token = _syntax->source->new_token( 0, "$start" );
         nonterminal_ptr start = std::make_unique< nonterminal >( start_token );
         start->is_special   = true;
         start->type         = _syntax->start->type;
         
-        token eof_token = _syntax->source->new_token( 0, "$" );
-        terminal_ptr eof = std::make_unique< terminal >( eof_token );
-        eof->is_special     = true;
+        token eoi_token = _syntax->source->new_token( 0, "$EOI" );
+        terminal_ptr eoi = std::make_unique< terminal >( eoi_token );
+        eoi->is_special     = true;
         
         rule_ptr rule = std::make_unique< ::rule >( start.get() );
         rule->lostart       = _syntax->locations.size();
         rule->locount       = 3;
         
         _syntax->locations.push_back( { rule.get(), _syntax->start, start->name, NULL_TOKEN } );
-        _syntax->locations.push_back( { rule.get(), eof.get(), eof->name, NULL_TOKEN } );
+        _syntax->locations.push_back( { rule.get(), eoi.get(), eoi->name, NULL_TOKEN } );
         _syntax->locations.push_back( { rule.get(), nullptr, NULL_TOKEN, NULL_TOKEN } );
         
         start->rules.push_back( rule.get() );
         _syntax->rules.push_back( std::move( rule ) );
         
         _syntax->start = start.get();
-        _syntax->terminals.emplace( eof->name, std::move( eof ) );
+        _syntax->terminals.emplace( eoi->name, std::move( eoi ) );
         _syntax->nonterminals.emplace( start->name, std::move( start ) );
     }
     else

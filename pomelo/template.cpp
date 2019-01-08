@@ -75,10 +75,10 @@ const char* $(class_name)::symbol_name( int kind )
 {
     switch ( kind )
     {
-    case 0: return "$";
-    case $$(token_value): return "$$(raw_token_name)";
-    case $(token_count): return "@start";
-    case $$(nterm_value): return "$$(raw_nterm_name)";
+    case 0: return "$EOI";
+    case $$(token_value): return "$$(token_name)";
+    case $(token_count): return "$start";
+    case $$(nterm_value): return "$$(nterm_name)";
     }
     return "";
 }

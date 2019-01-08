@@ -48,7 +48,29 @@ Options:
     unexpected and unresolved conflicts.
 
 
-## Syntax files
+## Generated Parser
+
+pomelo generates a parser class, including all actions from the syntax file.
+
+To use the parser, construct an instance, passing in the user value for the
+main parse stack.  The user value is typically a reference to the rest of the
+code using the parser, providing methods used by the actions.
+
+    explicit parser( const user_value& u );
+
+Parsing then proceeds one token at a time.  The generated header contains an
+enumeration assigning token numbers to each terminal in the grammar.  Call the
+`parse` method once for each token, passing in both the token number and the
+token's value.
+
+    void parse( int token, const token_type& value );
+
+The special `EOI` token is declared implicitly, representing the end of input.
+It always has a token number of 0.  Call the `parse` method again with this
+token to complete a parse.
+
+
+## Syntax Files
 
 ### Productions
 
@@ -302,7 +324,7 @@ then the error function is called with the following arguments:
 
   * `u` : A reference to the user value for the current parse.
 
-  * `token` : The integer value (from the enumeration) of the unexpected token.
+  * `token` : The token number (from the enumeration) of the unexpected token.
 
   * `tokval` : A reference to the token's value.
 
@@ -337,7 +359,7 @@ Directives supported in syntax files:
     stacks are split.
 
   * `%token_prefix { PREFIX_ }` : An enumeration listing all terminal symbols
-    (and giving them an integer value) is written into the generated header.
+    (and giving them an token number) is written into the generated header.
     This allows you to provide a prefix for the enumerators.
 
   * `%nterm_prefix { PREFIX_ }` : An enumeration listing all nonterminal

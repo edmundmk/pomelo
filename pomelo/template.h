@@ -31,12 +31,13 @@ $(include_header)
 
 enum
 {
-    $$(token_name) = $$(token_value),
+    $(token_prefix)EOI = 0,
+    $(token_prefix)$$(token_name) = $$(token_value),
 };
 
 enum
 {
-    $$(nterm_name) = $$(nterm_value),
+    $(nterm_prefix)$$(nterm_upper) = $$(nterm_value),
 };
 
 

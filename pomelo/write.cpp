@@ -396,9 +396,12 @@ std::string write::replace( std::string line )
 {
     /*
         $(header)
-        $(include)
+        $(include_header)
+        $(include_source)
         $(include_guard)
         $(class_name)
+        $(token_prefix)
+        $(nterm_prefix)
         $(user_value)
         $(user_split)
         $(token_type)
@@ -454,6 +457,24 @@ std::string write::replace( std::string line )
             else
                 name = "parser";
             r.replace( name );
+        }
+        else if ( valname == "$(token_prefix)" )
+        {
+            std::string prefix;
+            if ( syntax->token_prefix.specified )
+                prefix = trim( syntax->token_prefix.text );
+            else
+                prefix = "TOKEN_";
+            r.replace( prefix );
+        }
+        else if ( valname == "$(nterm_prefix)" )
+        {
+            std::string prefix;
+            if ( syntax->nterm_prefix.specified )
+                prefix = trim( syntax->nterm_prefix.text );
+            else
+                prefix = "NTERM_";
+            r.replace( prefix );
         }
         else if ( valname == "$(user_value)" )
         {
@@ -539,7 +560,6 @@ std::string write::replace( std::string line, terminal* token )
 {
     /*
         $$(token_name)
-        $$(raw_token_name)
         $$(token_value)
     */
 
@@ -550,18 +570,7 @@ std::string write::replace( std::string line, terminal* token )
     {
         if ( valname == "$$(token_name)" )
         {
-            std::string name = syntax->source->text( token->name );
-            std::string prefix;
-            if ( syntax->token_prefix.specified )
-                prefix = trim( syntax->token_prefix.text );
-            else
-                prefix = "TOKEN_";
-            r.replace( prefix + name );
-        }
-        else if ( valname == "$$(raw_token_name)" )
-        {
-            std::string name = syntax->source->text( token->name );
-            r.replace( name );
+            r.replace( syntax->source->text( token->name ) );
         }
         else if ( valname == "$$(token_value)" )
         {
@@ -580,7 +589,6 @@ std::string write::replace( std::string line, nonterminal* nterm )
 {
     /*
         $$(nterm_name)
-        $$(raw_nterm_name)
         $$(nterm_value)
     */
     
@@ -592,17 +600,12 @@ std::string write::replace( std::string line, nonterminal* nterm )
         if ( valname == "$$(nterm_name)" )
         {
             std::string name = syntax->source->text( nterm->name );
-            std::transform( name.begin(), name.end(), name.begin(), ::toupper );
-            std::string prefix;
-            if ( syntax->nterm_prefix.specified )
-                prefix = trim( syntax->nterm_prefix.text );
-            else
-                prefix = "NTERM_";
-            r.replace( prefix + name );
+            r.replace( name );
         }
-        else if ( valname == "$$(raw_nterm_name)" )
+        else if ( valname == "$$(nterm_upper)" )
         {
             std::string name = syntax->source->text( nterm->name );
+            std::transform( name.begin(), name.end(), name.begin(), ::toupper );
             r.replace( name );
         }
         else if ( valname == "$$(nterm_value)" )
