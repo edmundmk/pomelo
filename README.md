@@ -223,8 +223,8 @@ with the conflict marker.
 A grammar with unresolved conflicts is effectively ambiguous.  Such grammars
 either require more than one token of lookahead, or additional contextual
 knowledge must be used to disambiguate two or more valid parse trees.  GLR
-parsing allows us to handle both these cases - unambiguous grammars that are
-not LALR(1), or truly ambiguous grammars.
+parsing allows pomelo to handle both these cases - unambiguous grammars that
+are not LALR(1), as well as truly ambiguous grammars.
 
 When the parser encounters an expected conflict, the parser is split into
 two (or more) independent parsers.  Instead of a single parser stack, there
