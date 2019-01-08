@@ -64,7 +64,7 @@ enumeration assigning token numbers to each terminal in the grammar.  Call the
 `parse` method once for each token, passing in both the token number and the
 token's value.
 
-    void parse( int token, const token_type& value );
+    void parse( int token, const token_type& tokval );
 
 The special `EOI` token is declared implicitly, representing the end of input.
 It always has a token number of 0.  Call the `parse` method again with this
