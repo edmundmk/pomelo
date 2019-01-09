@@ -42,22 +42,42 @@ const int $(class_name)::NTERM_COUNT      = $(nterm_count);
 const int $(class_name)::STATE_COUNT      = $(state_count);
 const int $(class_name)::RULE_COUNT       = $(rule_count);
 const int $(class_name)::CONFLICT_COUNT   = $(conflict_count);
-const int $(class_name)::ERROR_ACTION     = $(error_action);
 const int $(class_name)::ACCEPT_ACTION    = $(accept_action);
+const int $(class_name)::ERROR_ACTION     = $(error_action);
 
-const unsigned short $(class_name)::ACTION[] =
+const unsigned short $(class_name)::ACTION_DISPLACEMENT[] =
 {
-$(action_table)
+$(action_displacement)
+};
+
+const unsigned short $(class_name)::ACTION_VALUE_TABLE[] =
+{
+$(action_value_table)
+};
+
+const unsigned short $(class_name)::ACTION_ROW_TABLE[] =
+{
+$(action_row_table)
+};
+
+const unsigned short $(class_name)::GOTO_DISPLACEMENT[] =
+{
+$(goto_displacement)
+};
+
+const unsigned short $(class_name)::GOTO_VALUE_TABLE[] =
+{
+$(goto_value_table)
+};
+
+const unsigned short $(class_name)::GOTO_ROW_TABLE[] =
+{
+$(goto_row_table)
 };
 
 const unsigned short $(class_name)::CONFLICT[] =
 {
 $(conflict_table)
-};
-
-const unsigned short $(class_name)::GOTO[] =
-{
-$(goto_table)
 };
 
 const $(class_name)::rule_info $(class_name)::RULE[] =
@@ -365,7 +385,28 @@ $(class_name)::~$(class_name)()
 
 int $(class_name)::lookup_action( int state, int token )
 {
-    return ACTION[ state * TOKEN_COUNT + token ];
+    int index = ACTION_DISPLACEMENT[ state ] + token;
+    if ( ACTION_ROW_TABLE[ index ] == state )
+    {
+        return ACTION_VALUE_TABLE[ index ];
+    }
+    else
+    {
+        return ERROR_ACTION;
+    }
+}
+
+int $(class_name)::lookup_goto( int state, int nterm )
+{
+    int index = GOTO_DISPLACEMENT[ state ] + nterm;
+    if ( GOTO_ROW_TABLE[ index ] == state )
+    {
+        return GOTO_VALUE_TABLE[ index ];
+    }
+    else
+    {
+        return STATE_COUNT;
+    }
 }
 
 void $(class_name)::reduce( stack* s, int token, int rule )
@@ -427,7 +468,7 @@ void $(class_name)::reduce( stack* s, int token, int rule )
             }
 
             // Move to state.
-            int goto_state = GOTO[ state * NTERM_COUNT + zrinfo.nterm ];
+            int goto_state = lookup_goto( state, zrinfo.nterm );
             assert( goto_state < STATE_COUNT );
             state = goto_state;
 
@@ -636,7 +677,7 @@ void $(class_name)::reduce_rule( stack* s, int rule, const rule_info& rinfo )
     
     // Find state we've returned to after reduction, and goto next one.
     int state = values[ index ].state();
-    int goto_state = GOTO[ state * NTERM_COUNT + rinfo.nterm ];
+    int goto_state = lookup_goto( state, rinfo.nterm );
     assert( goto_state < STATE_COUNT );
     s->state = goto_state;
 

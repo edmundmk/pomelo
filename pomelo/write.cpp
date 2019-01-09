@@ -416,8 +416,14 @@ std::string write::replace( std::string line )
         $(error_report)
 
         $(action_table)
-        $(conflict_table)
+        $(action_displacement)
+        $(action_value_table)
+        $(action_row_table)
         $(goto_table)
+        $(goto_displacement)
+        $(goto_value_table)
+        $(goto_row_table)
+        $(conflict_table)
         $(rule_table)
     */
     
@@ -533,13 +539,37 @@ std::string write::replace( std::string line )
         {
             r.replace( write_table( _action_table->actions ) );
         }
-        else if ( valname == "$(conflict_table)" )
+        else if ( valname == "$(action_displacement)" )
         {
-            r.replace( write_table( _action_table->conflicts ) );
+            r.replace( write_table( _action_table->compressed->displace ) );
+        }
+        else if ( valname == "$(action_value_table)" )
+        {
+            r.replace( write_table( _action_table->compressed->compress ) );
+        }
+        else if ( valname == "$(action_row_table)" )
+        {
+            r.replace( write_table( _action_table->compressed->comprows ) );
         }
         else if ( valname == "$(goto_table)" )
         {
             r.replace( write_table( _goto_table->gotos ) );
+        }
+        else if ( valname == "$(goto_displacement)" )
+        {
+            r.replace( write_table( _goto_table->compressed->displace ) );
+        }
+        else if ( valname == "$(goto_value_table)" )
+        {
+            r.replace( write_table( _goto_table->compressed->compress ) );
+        }
+        else if ( valname == "$(goto_row_table)" )
+        {
+            r.replace( write_table( _goto_table->compressed->comprows ) );
+        }
+        else if ( valname == "$(conflict_table)" )
+        {
+            r.replace( write_table( _action_table->conflicts ) );
         }
         else if ( valname == "$(rule_table)" )
         {

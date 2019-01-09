@@ -17,6 +17,7 @@
 #include <queue>
 #include "errors.h"
 #include "automata.h"
+#include "compress.h"
 
 
 class actions;
@@ -35,8 +36,8 @@ typedef std::shared_ptr< goto_table > goto_table_ptr;
 
 struct action_table
 {
-    int error_action;   // error action
     int accept_action;  // accept action
+    int error_action;   // error action
 
     int rule_count;     // max_state <= n < max_reduce -> reduce rule n - max_state
     int conflict_count; // max_reduce <= n < max_conflict -> conflict n - max_reduce
@@ -48,6 +49,7 @@ struct action_table
     int state_count;
 
     std::vector< int > actions;
+    compressed_table_ptr compressed;
 };
 
 
@@ -63,6 +65,7 @@ struct goto_table
     int state_count;
     
     std::vector< int > gotos;
+    compressed_table_ptr compressed;
 };
 
 

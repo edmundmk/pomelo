@@ -377,7 +377,6 @@ Directives supported in syntax files:
 ## TODO
 
 * Implement an error recovery strategy for the generated parser.
-* Compress the parser tables.
 
 
 ## License

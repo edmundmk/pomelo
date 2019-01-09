@@ -91,18 +91,23 @@ private:
     static const int STATE_COUNT;
     static const int RULE_COUNT;
     static const int CONFLICT_COUNT;
-    static const int ERROR_ACTION;
     static const int ACCEPT_ACTION;
+    static const int ERROR_ACTION;
 
-    static const unsigned short ACTION[];
+    static const unsigned short ACTION_DISPLACEMENT[];
+    static const unsigned short ACTION_VALUE_TABLE[];
+    static const unsigned short ACTION_ROW_TABLE[];
+    static const unsigned short GOTO_DISPLACEMENT[];
+    static const unsigned short GOTO_VALUE_TABLE[];
+    static const unsigned short GOTO_ROW_TABLE[];
     static const unsigned short CONFLICT[];
-    static const unsigned short GOTO[];
     static const rule_info RULE[];
 
     $$(rule_type) $$(rule_name)($$(rule_param));
     $$(merge_type) $$(merge_name)( const user_value& u, $$(merge_type)&& a, user_value&& v, $$(merge_type)&& b );
     
     int lookup_action( int state, int token );
+    int lookup_goto( int state, int nterm );
     void reduce( stack* s, int token, int rule );
     void reduce_rule( stack* s, int rule, const rule_info& rinfo );
 ?(user_value)?(token_type)    void error( const user_value& u, int token, const token_type& tokval );

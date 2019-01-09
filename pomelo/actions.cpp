@@ -148,9 +148,9 @@ action_table_ptr actions::build_action_table()
     
     // Work out remaining action numbers.
     table->conflict_count = (int)table->conflicts.size();
-    table->error_action = table->state_count + table->rule_count + table->conflict_count;
-    table->accept_action = table->error_action + 1;
-    
+    table->accept_action = table->state_count + table->rule_count + table->conflict_count;
+    table->error_action = table->accept_action + 1;
+
     // Reset special actions now we know what to call them.
     for ( size_t i = 0; i < table->actions.size(); ++i )
     {
@@ -164,6 +164,9 @@ action_table_ptr actions::build_action_table()
             table->actions[ i ] = table->accept_action;
         }
     }
+
+    // Compress table.
+    table->compressed = compress( table->token_count, table->state_count, table->error_action, table->actions );
     
     return table;
 }
@@ -208,6 +211,9 @@ goto_table_ptr actions::build_goto_table()
             table->gotos[ base + value ] = trans->next->index;
         }
     }
+
+    // Compress table.
+    table->compressed = compress( table->nterm_count, table->state_count, table->state_count, table->gotos );
     
     return table;
 }

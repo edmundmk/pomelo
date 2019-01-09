@@ -21,6 +21,7 @@ endif
 sources = [
     'pomelo/actions.cpp',
     'pomelo/automata.cpp',
+    'pomelo/compress.cpp',
     'pomelo/errors.cpp',
     'pomelo/lalr1.cpp',
     'pomelo/main.cpp',
