@@ -110,7 +110,7 @@ rule, and is enclosed in curly braces.
         PP contents DOT qual_name QQ .
             { return reduced_rule(); }
 
-The values of the symbols comprising the rule can be provides as arguments to
+The values of the symbols comprising the rule can be provided as arguments to
 the action function by giving them a name using parentheses.
 
         PP contents(c) DOT(op) qual_name(name) QQ .
