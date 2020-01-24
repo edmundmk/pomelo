@@ -5,18 +5,11 @@
 #  Copyright © 2018 Edmund Kapusniak.
 #
 #  Licensed under the MIT License. See LICENSE file in the project root for
-#  full license information. 
+#  full license information.
 #
 
 
-project( 'pomelo', 'cpp' )
-
-compiler = meson.get_compiler( 'cpp' )
-if compiler.get_id() != 'msvc' and not compiler.has_argument( '-std=gnu++17' )
-    options = [ 'cpp_std=gnu++1z' ]
-else
-    options = [ 'cpp_std=gnu++17' ]
-endif
+project( 'pomelo', 'cpp', default_options : [ 'cpp_std=c++17' ] )
 
 sources = [
     'pomelo/actions.cpp',
@@ -37,8 +30,8 @@ sources += custom_target(
     'templateinc',
     input : [ 'pomelo/template.h', 'pomelo/template.cpp' ],
     output : [ 'template.inc' ],
-    command : [ find_program( 'geninc.sh' ), '@INPUT0@', '@INPUT1@', '@OUTPUT@' ]
+    command : [ find_program( 'geninc.py' ), '@INPUT0@', '@INPUT1@', '@OUTPUT@' ]
 )
 
-executable( 'pomelo', sources : sources, install : true, override_options : options )
+executable( 'pomelo', sources : sources, install : true )
 

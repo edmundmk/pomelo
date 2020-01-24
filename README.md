@@ -11,8 +11,7 @@ pomelo is built using meson, e.g.
 
     meson build; cd build; ninja
 
-The build scripts assume a Unix environment, and the `xxd` tool is used to
-embed the parser template into the program.
+The build scripts use python to embed the parser template into the program.
 
 
 ## Running pomelo
@@ -22,7 +21,7 @@ embed the parser template into the program.
 Options:
 
   * `--syntax` : Writes a syntax file to stdout after parsing, generated
-    from the internal syntax representation.  Used to test the syntax parser 
+    from the internal syntax representation.  Used to test the syntax parser
     frontend.
 
   * `--dump` : Writes a detailed list of all states and transitions in the
@@ -85,7 +84,7 @@ consists of its name, followed by a list of rules enclosed in square brackets.
     ]
 
 Nonterminal (production) names are lower-case.  Terminal (token) names are
-upper-case.  All rules for a particular production must be specified at the 
+upper-case.  All rules for a particular production must be specified at the
 same time.
 
 The first nonterminal in a syntax file is the root production.
@@ -319,7 +318,7 @@ The error function is defined using the `%error_report` directive.
     {
         fprintf( stderr, "unexpected token '%s'\n", symbol_name( token ) );
     }
-    
+
 When there is only one valid parse, and the parser is given a unexpected token,
 then the error function is called with the following arguments:
 
@@ -353,7 +352,7 @@ Directives supported in syntax files:
 
   * `%class_name { identifier }` : Give a name for the generated parser class.
     The default is `parser`.
-    
+
   * `%token_type { type_name }` : The value type for terminal symbols.  Like
     value types for nonterminals, terminal values are usually moved, but they
     are copied into the parser for each live parse, and may be copied when
@@ -382,5 +381,5 @@ Directives supported in syntax files:
 ## License
 
 Copyright © 2018 Edmund Kapusniak.  Licensed under the MIT License. See
-LICENSE file in the project root for full license information. 
+LICENSE file in the project root for full license information.
 
