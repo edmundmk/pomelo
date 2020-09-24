@@ -5,12 +5,13 @@
 //  Copyright © 2019 Edmund Kapusniak.
 //
 //  Licensed under the MIT License. See LICENSE file in the project root for
-//  full license information. 
+//  full license information.
 //
 
 
 #include "compress.h"
 #include <assert.h>
+#include <algorithm>
 
 
 struct table_row
@@ -23,7 +24,7 @@ struct table_row
 
 static bool conflicting( const std::vector< int >& table, int t_index, const compressed_table_ptr& c, int c_index )
 {
-    assert( c_index <= c->compress.size() );
+    assert( (unsigned)c_index <= c->compress.size() );
     int count = std::min( c->cols, (int)( c->compress.size() - c_index ) );
     for ( int col = 0; col < count; ++col )
     {
@@ -40,7 +41,7 @@ static bool conflicting( const std::vector< int >& table, int t_index, const com
 
 compressed_table_ptr compress( int cols, int rows, int error, const std::vector< int >& table )
 {
-    assert( table.size() == cols * rows );
+    assert( table.size() == (unsigned)( cols * rows ) );
 
     // Create result.
     compressed_table_ptr c = std::make_shared< compressed_table >();
@@ -50,7 +51,7 @@ compressed_table_ptr compress( int cols, int rows, int error, const std::vector<
 
     // Count number of non-error entries in each row of the table.
     std::vector< table_row > table_rows;
-    table_rows.reserve( rows ); 
+    table_rows.reserve( rows );
     for ( int row = 0; row < rows; ++row )
     {
         table_row tr = { row, row * cols, 0 };
@@ -84,7 +85,7 @@ compressed_table_ptr compress( int cols, int rows, int error, const std::vector<
 
         // Find first position in compressed table where there is no conflict.
         int disp = 0;
-        for ( ; disp < c->compress.size(); ++disp )
+        for ( ; (unsigned)disp < c->compress.size(); ++disp )
         {
             if ( ! conflicting( table, tr.index, c, disp ) )
             {
@@ -95,7 +96,7 @@ compressed_table_ptr compress( int cols, int rows, int error, const std::vector<
         // Place row here.
         c->displace[ tr.row ] = disp;
         int col = 0;
-        for ( ; col < cols && disp + col < c->compress.size(); ++col )
+        for ( ; col < cols && (unsigned)( disp + col ) < c->compress.size(); ++col )
         {
             int value = table[ tr.index + col ];
             if ( value != error )
